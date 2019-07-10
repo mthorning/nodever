@@ -1,55 +1,16 @@
 use exitfailure::ExitFailure;
-use failure::ResultExt;
-use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::{Error, Read};
-use std::path::{Path, PathBuf};
+use std::io::{self,Write};
+use std::io::Error;
+use std::path::{PathBuf, Path};
+use nexver::detail::Detail;
 use structopt::StructOpt;
+use nexver::cli::Cli;
 
-#[derive(Debug, StructOpt)]
-struct Cli {
-    /// The path to the root of the Nexcenter app.
-    #[structopt(parse(from_os_str))]
-    path: PathBuf,
-    /// The pattern to filter folders in node_modules.
-    #[structopt(short = "f", long = "filter")]
-    filter: String,
-}
-
-/// Holds the name and version values from the package.json files.
-#[derive(Debug)]
-pub struct Version {
-    pub name: String,
-    pub version: String,
-    pub path: PathBuf,
-}
-
-#[derive(Deserialize, Serialize)]
-struct PjsonDetails {
-    name: String,
-    version: String,
-}
-
-impl Version {
-    /// Returns a new Version type.
-    pub fn from(path: PathBuf) -> Result<Version, Error> {
-        let pjson_string = Version::get_pjson(&path)?;
-        let pjson_details: PjsonDetails = serde_json::from_str(&pjson_string[..])?;
-
-        Ok(Version {
-            name: pjson_details.name,
-            version: pjson_details.version,
-            path,
-        })
-    }
-
-    /// Returns the data from the package.json file.
-    fn get_pjson(path: &PathBuf) -> Result<String, Error> {
-        let mut file = File::open(path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        Ok(contents)
-    }
+/// Gets the name of the app.
+fn get_app_details(base_path: &Path) -> Result<Detail, Error> {
+    let mut path = PathBuf::from(base_path);
+    path.push("package.json");
+    Detail::from(path)
 }
 
 /// Loops through the node_modules directory and returns a Vec of the matching folder names.
@@ -68,20 +29,32 @@ fn get_dependency_folders(path: &Path, filter: &str) -> Result<Vec<String>, Erro
     Ok(deps)
 }
 
-/// Loops through the dependency folders and creates a Vec of Version types.
-fn get_dependency_versions(
+/// Loops through the dependency folders and creates a Vec of Detail types.
+fn get_dependency_details (
     base_path: &Path,
     folder_names: Vec<String>,
-) -> Result<Vec<Version>, Error> {
-    let mut versions = Vec::new();
+) -> Result<Vec<Detail>, Error> {
+    let mut details = Vec::new();
 
     for name in folder_names {
         let mut path = PathBuf::from(base_path);
         path.push(name);
         path.push("package.json");
-        versions.push(Version::from(path)?);
+        details.push(Detail::from(path)?);
     }
-    Ok(versions)
+    Ok(details)
+}
+
+fn print_details(app_details: Detail, dep_details: Vec<Detail>) -> Result<(), Error> {
+    let mut buffer = Vec::new();
+    write!(&mut buffer, "\n{} at version {} uses the following components: \n\n", app_details.name, app_details.version)?;
+    for detail in dep_details {
+        write!(&mut buffer, "{} = {} \n", detail.name, detail.version)?;
+    }
+        let stdout = io::stdout();
+        let mut handle = stdout.lock();
+        handle.write(buffer.as_mut_slice())?;
+    Ok(())
 }
 
 fn main() -> Result<(), ExitFailure> {
@@ -89,11 +62,16 @@ fn main() -> Result<(), ExitFailure> {
     let mut path = args.path;
     let filter = args.filter;
 
+    let app_details = get_app_details(&path.as_path())?;
+
     path.push("node_modules");
 
     let dependency_folders = get_dependency_folders(&path.as_path(), &filter)?;
-    let versions = get_dependency_versions(&path.as_path(), dependency_folders);
-    println!("{:?}", versions);
+    let details = get_dependency_details(&path.as_path(), dependency_folders);
+
+    if let Ok(details) = details {
+        print_details(app_details, details)?;
+    }
 
     Ok(())
 }
