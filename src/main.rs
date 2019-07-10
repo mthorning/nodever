@@ -51,9 +51,9 @@ fn print_details(app_details: Detail, dep_details: Vec<Detail>) -> Result<(), Er
     for detail in dep_details {
         write!(&mut buffer, "{} = {} \n", detail.name, detail.version)?;
     }
-        let stdout = io::stdout();
-        let mut handle = stdout.lock();
-        handle.write(buffer.as_mut_slice())?;
+    let stdout = io::stdout();
+    let mut handle = stdout.lock();
+    handle.write(buffer.as_mut_slice())?;
     Ok(())
 }
 
@@ -62,15 +62,18 @@ fn main() -> Result<(), ExitFailure> {
     let mut path = args.path;
     let filter = args.filter;
 
-    let app_details = get_app_details(&path.as_path())?;
+    let app_details = get_app_details(&path)?;
 
     path.push("node_modules");
 
-    let dependency_folders = get_dependency_folders(&path.as_path(), &filter)?;
-    let details = get_dependency_details(&path.as_path(), dependency_folders);
+    let dependency_folders = get_dependency_folders(&path, &filter);
 
-    if let Ok(details) = details {
-        print_details(app_details, details)?;
+    if let Ok(dependency_folders) = dependency_folders {
+        let details = get_dependency_details(&path, dependency_folders);
+
+        if let Ok(details) = details {
+            print_details(app_details, details)?;
+        }
     }
 
     Ok(())
