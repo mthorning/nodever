@@ -1,5 +1,5 @@
 [package]
-name = "nexver"
+name = "nodever"
 version = "0.1.0"
 authors = ["@thorning_m <matthewthorning@gmail.com>"]
 edition = "2018"
