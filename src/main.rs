@@ -2,9 +2,10 @@ use exitfailure::ExitFailure;
 use std::io::{self,Write};
 use std::io::Error;
 use std::path::{PathBuf, Path};
-use nexver::detail::Detail;
+use nodever::detail::Detail;
 use structopt::StructOpt;
-use nexver::cli::Cli;
+use nodever::cli::Cli;
+use regex::Regex;
 
 /// Gets the name of the app.
 fn get_app_details(base_path: &Path) -> Result<Detail, Error> {
@@ -14,13 +15,13 @@ fn get_app_details(base_path: &Path) -> Result<Detail, Error> {
 }
 
 /// Loops through the node_modules directory and returns a Vec of the matching folder names.
-fn get_dependency_folders(path: &Path, filter: &str) -> Result<Vec<String>, Error> {
+fn get_dependency_folders(path: &Path, filter: Regex) -> Result<Vec<String>, Error> {
     let mut deps = Vec::new();
 
     for entry in path.read_dir()? {
         if let Ok(entry) = entry {
             let folder_name = entry.file_name().into_string().unwrap();
-            if folder_name.starts_with(filter) {
+            if filter.is_match(&folder_name) {
                 deps.push(folder_name);
             }
         }
@@ -60,17 +61,18 @@ fn print_details(app_details: Detail, dep_details: Vec<Detail>) -> Result<(), Er
 fn main() -> Result<(), ExitFailure> {
     let args = Cli::from_args();
     let mut path = args.path;
-    let filter = args.filter;
+    //let filter = Regex::new(&args.filter)?;
+    let filter = Regex::new(r".")?;
 
     let app_details = get_app_details(&path)?;
 
     path.push("node_modules");
 
-    let dependency_folders = get_dependency_folders(&path, &filter);
+    let dependency_folders = get_dependency_folders(&path, filter);
 
     if let Ok(dependency_folders) = dependency_folders {
         let details = get_dependency_details(&path, dependency_folders);
-
+        
         if let Ok(details) = details {
             print_details(app_details, details)?;
         }
