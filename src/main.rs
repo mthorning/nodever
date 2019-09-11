@@ -26,7 +26,6 @@ fn get_dependency_folders(path: &Path, filter: Regex) -> Result<Vec<String>, Err
             }
         }
     }
-
     Ok(deps)
 }
 
@@ -41,7 +40,10 @@ fn get_dependency_details (
         let mut path = PathBuf::from(base_path);
         path.push(name);
         path.push("package.json");
-        details.push(Detail::from(path)?);
+        match Detail::from(path) {
+            Ok(detail) => details.push(detail),
+            Err(_) => ()
+        }
     }
     Ok(details)
 }
@@ -49,9 +51,15 @@ fn get_dependency_details (
 fn print_details(app_details: Detail, dep_details: Vec<Detail>) -> Result<(), Error> {
     let mut buffer = Vec::new();
     write!(&mut buffer, "\n{} at version {} uses the following components: \n\n", app_details.name, app_details.version)?;
-    for detail in dep_details {
-        write!(&mut buffer, "{} = {} \n", detail.name, detail.version)?;
+
+    if dep_details.len() > 0 {
+        for detail in dep_details {
+            write!(&mut buffer, "{} = {} \n", detail.name, detail.version)?;
+        }
+    } else {
+        write!(&mut buffer, "No matches found. \n\n")?;
     }
+
     let stdout = io::stdout();
     let mut handle = stdout.lock();
     handle.write(buffer.as_mut_slice())?;
@@ -61,8 +69,8 @@ fn print_details(app_details: Detail, dep_details: Vec<Detail>) -> Result<(), Er
 fn main() -> Result<(), ExitFailure> {
     let args = Cli::from_args();
     let mut path = args.path;
-    //let filter = Regex::new(&args.filter)?;
-    let filter = Regex::new(r".")?;
+    let filter = Regex::new(&args.filter)?;
+    let sort = args.sort;
 
     let app_details = get_app_details(&path)?;
 
@@ -73,7 +81,10 @@ fn main() -> Result<(), ExitFailure> {
     if let Ok(dependency_folders) = dependency_folders {
         let details = get_dependency_details(&path, dependency_folders);
         
-        if let Ok(details) = details {
+        if let Ok(mut details) = details {
+            if sort {
+                details.sort_by(|a, b| a.name.cmp(&b.name));
+            }
             print_details(app_details, details)?;
         }
     }
