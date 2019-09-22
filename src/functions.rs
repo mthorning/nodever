@@ -1,6 +1,6 @@
 use crate::types::detail::Detail;
 use regex::Regex;
-use std::io::{self, Error, Write};
+use std::io::{self, Error, ErrorKind, Write};
 use std::path::{Path, PathBuf};
 
 /// Gets the details for the selected dependency.
@@ -11,8 +11,22 @@ pub fn get_dependency_details(base_path: &Path) -> Result<Detail, Error> {
 }
 
 /// Loops through the node_modules directory and pushes the details into a Vec.
-pub fn get_dependencies(deps: &mut Vec<Detail>, base_path: &Path, filter: &Regex) {
-    for entry in base_path.read_dir().unwrap() {
+pub fn get_dependencies(
+    deps: &mut Vec<Detail>,
+    base_path: &Path,
+    filter: &Regex,
+) -> Result<(), Error> {
+    let node_modules = match base_path.read_dir() {
+        Ok(node_modules) => node_modules,
+        Err(_) => {
+            return Err(Error::new(
+                ErrorKind::NotFound,
+                "node_modules folder not found.",
+            ))
+        }
+    };
+
+    for entry in node_modules {
         if let Ok(entry) = entry {
             let folder_name = entry.file_name().into_string().unwrap();
 
@@ -22,10 +36,11 @@ pub fn get_dependencies(deps: &mut Vec<Detail>, base_path: &Path, filter: &Regex
             if folder_name.starts_with('@') {
                 let mut path = PathBuf::from(base_path);
                 path.push(&folder_name);
-                get_dependencies(deps, &path, filter);
+                get_dependencies(deps, &path, filter)?;
             } else if filter.is_match(&folder_name) {
                 let mut path = PathBuf::from(base_path);
                 path.push(&folder_name);
+
                 match get_dependency_details(&path) {
                     Ok(details) => deps.push(details),
                     Err(err) => println!("Error getting {:?}: {}", path, err),
@@ -33,6 +48,7 @@ pub fn get_dependencies(deps: &mut Vec<Detail>, base_path: &Path, filter: &Regex
             }
         }
     }
+    Ok(())
 }
 
 pub fn print_details(app_details: Detail, dep_details: Vec<Detail>) -> Result<(), Error> {

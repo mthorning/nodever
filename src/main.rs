@@ -1,10 +1,10 @@
-mod types;
 mod functions;
+mod types;
 
-use types::cli::Cli;
 use exitfailure::ExitFailure;
 use regex::Regex;
 use structopt::StructOpt;
+use types::cli::Cli;
 
 fn main() -> Result<(), ExitFailure> {
     let args = Cli::from_args();
@@ -17,7 +17,7 @@ fn main() -> Result<(), ExitFailure> {
     path.push("node_modules");
 
     let mut details = Vec::new();
-    functions::get_dependencies(&mut details, &path, &filter);
+    functions::get_dependencies(&mut details, &path, &filter)?;
 
     if sort {
         details.sort_by(|a, b| a.name.cmp(&b.name));
