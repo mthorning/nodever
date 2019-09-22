@@ -3,45 +3,37 @@ use std::path::{PathBuf, Path};
 use regex::Regex;
 use crate::types::detail::Detail;
 
-/// Gets the name of the app.
-pub fn get_app_details(base_path: &Path) -> Result<Detail, Error> {
+/// Gets the details for the selected dependency.
+pub fn get_dependency_details(base_path: &Path) -> Result<Detail, Error> {
     let mut path = PathBuf::from(base_path);
     path.push("package.json");
     Detail::from(path)
 }
 
-/// Loops through the node_modules directory and returns a Vec of the matching folder names.
-pub fn get_dependency_folders(path: &Path, filter: Regex) -> Result<Vec<String>, Error> {
-    let mut deps = Vec::new();
+/// Loops through the node_modules directory and pushes the details into a Vec.
+pub fn get_dependencies(deps: &mut Vec<Detail>, base_path: &Path, filter: &Regex) {
 
-    for entry in path.read_dir()? {
+    for entry in base_path.read_dir().unwrap() {
         if let Ok(entry) = entry {
             let folder_name = entry.file_name().into_string().unwrap();
-            if filter.is_match(&folder_name) {
-                deps.push(folder_name);
+
+            if folder_name.starts_with('.') {
+                continue;
+            }
+            if folder_name.starts_with('@') {
+                let mut path = PathBuf::from(base_path);
+                path.push(&folder_name);
+                get_dependencies(deps, &path, filter);
+            } else if filter.is_match(&folder_name) {
+                let mut path = PathBuf::from(base_path);
+                path.push(&folder_name);
+                match get_dependency_details(&path) {
+                    Ok(details) => deps.push(details),
+                    Err(err) => println!("Error getting {:?}: {}", path, err),
+                }
             }
         }
     }
-    Ok(deps)
-}
-
-/// Loops through the dependency folders and creates a Vec of Detail types.
-pub fn get_dependency_details (
-    base_path: &Path,
-    folder_names: Vec<String>,
-) -> Result<Vec<Detail>, Error> {
-    let mut details = Vec::new();
-
-    for name in folder_names {
-        let mut path = PathBuf::from(base_path);
-        path.push(name);
-        path.push("package.json");
-        match Detail::from(path) {
-            Ok(detail) => details.push(detail),
-            Err(_) => ()
-        }
-    }
-    Ok(details)
 }
 
 pub fn print_details(app_details: Detail, dep_details: Vec<Detail>) -> Result<(), Error> {
