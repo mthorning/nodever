@@ -1,7 +1,7 @@
-use std::io::{self, Error, Write};
-use std::path::{PathBuf, Path};
-use regex::Regex;
 use crate::types::detail::Detail;
+use regex::Regex;
+use std::io::{self, Error, Write};
+use std::path::{Path, PathBuf};
 
 /// Gets the details for the selected dependency.
 pub fn get_dependency_details(base_path: &Path) -> Result<Detail, Error> {
@@ -12,7 +12,6 @@ pub fn get_dependency_details(base_path: &Path) -> Result<Detail, Error> {
 
 /// Loops through the node_modules directory and pushes the details into a Vec.
 pub fn get_dependencies(deps: &mut Vec<Detail>, base_path: &Path, filter: &Regex) {
-
     for entry in base_path.read_dir().unwrap() {
         if let Ok(entry) = entry {
             let folder_name = entry.file_name().into_string().unwrap();
@@ -38,19 +37,22 @@ pub fn get_dependencies(deps: &mut Vec<Detail>, base_path: &Path, filter: &Regex
 
 pub fn print_details(app_details: Detail, dep_details: Vec<Detail>) -> Result<(), Error> {
     let mut buffer = Vec::new();
-    write!(&mut buffer, "\n{} at version {} uses the following components: \n\n", app_details.name, app_details.version)?;
+    writeln!(
+        &mut buffer,
+        "\n{} matches found in version {} of {}. \n",
+        dep_details.len(),
+        app_details.version,
+        app_details.name
+    )?;
 
-    if dep_details.len() > 0 {
+    if !dep_details.is_empty() {
         for detail in dep_details {
-            write!(&mut buffer, "{} = {} \n", detail.name, detail.version)?;
+            writeln!(&mut buffer, "{}: {}", detail.name, detail.version)?;
         }
-    } else {
-        write!(&mut buffer, "No matches found. \n\n")?;
     }
 
     let stdout = io::stdout();
     let mut handle = stdout.lock();
-    handle.write(buffer.as_mut_slice())?;
+    handle.write_all(buffer.as_mut_slice())?;
     Ok(())
 }
-

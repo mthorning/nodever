@@ -1,7 +1,7 @@
-use std::path::PathBuf;
-use std::io::{Read, Error};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
+use std::io::{Error, ErrorKind, Read};
+use std::path::PathBuf;
 
 #[derive(Deserialize, Serialize)]
 struct PjsonDetails {
@@ -20,7 +20,10 @@ pub struct Detail {
 impl Detail {
     /// Returns a new Detail type.
     pub fn from(path: PathBuf) -> Result<Detail, Error> {
-        let pjson_string = Detail::get_pjson(&path)?;
+        let pjson_string = match Detail::get_pjson(&path) {
+            Ok(pjson_string) => pjson_string,
+            Err(_) => return Err(Error::new(ErrorKind::NotFound, "Package.json not found.")),
+        };
         let pjson_details: PjsonDetails = serde_json::from_str(&pjson_string[..])?;
 
         Ok(Detail {

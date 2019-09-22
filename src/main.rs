@@ -19,8 +19,6 @@ fn main() -> Result<(), ExitFailure> {
     let mut details = Vec::new();
     functions::get_dependencies(&mut details, &path, &filter);
 
-    //let details = functions::get_dependency_details(&path, dependency_folders);
-    
     if sort {
         details.sort_by(|a, b| a.name.cmp(&b.name));
     }
