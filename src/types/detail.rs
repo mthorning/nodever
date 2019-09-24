@@ -8,15 +8,18 @@ use std::path::PathBuf;
 struct PjsonDetails {
     name: String,
     version: String,
+
     #[serde(default = "default_to_none")]
-    dependencies: Option<HashMap<String, String>>,
+    dependencies: Option<(String, String)>,
+
     #[serde(default = "default_to_none")]
-    dev_dependencies: Option<HashMap<String, String>>,
+    dev_dependencies: Option<(String, String)>,
+
     #[serde(default = "default_to_none")]
-    peer_dependencies: Option<HashMap<String, String>>,
+    peer_dependencies: Option<(String, String)>,
 }
 
-fn default_to_none() -> Option<HashMap<String, String>> {
+fn default_to_none() -> Option<(String, String)> {
     None
 }
 
@@ -26,9 +29,12 @@ pub struct Detail {
     pub name: String,
     pub version: String,
     pub path: PathBuf,
-    pub dependencies: Option<HashMap<String, String>>,
-    pub dev_dependencies: Option<HashMap<String, String>>,
-    pub peer_dependencies: Option<HashMap<String, String>>,
+    pub dependencies: Option<(String, String)>,
+    pub dev_dependencies: Option<(String, String)>,
+    pub peer_dependencies: Option<(String, String)>,
+    //pub dependencies: Option<String>,
+    //pub dev_dependencies: Option<String>,
+    //pub peer_dependencies: Option<String>,
 }
 
 impl Detail {
@@ -47,6 +53,9 @@ impl Detail {
             dependencies: pjson_details.dependencies,
             dev_dependencies: pjson_details.dev_dependencies,
             peer_dependencies: pjson_details.peer_dependencies,
+            //dependencies: parse_map(pjson_details.dependencies),
+            //dev_dependencies: parse_map(pjson_details.dev_dependencies),
+            //peer_dependencies: parse_map(pjson_details.peer_dependencies),
         })
     }
 

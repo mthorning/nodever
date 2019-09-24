@@ -14,24 +14,24 @@ fn main() -> Result<(), ExitFailure> {
     let sort = args.sort;
 
     let app_details = functions::get_dependency_details(&path)?;
-    //println!("{:?}", app_details);
+    println!("{:?}", app_details);
 
     path.push("node_modules");
 
     let mut details = Vec::new();
     functions::get_dependencies(&mut details, &path, &filter)?;
 
-    if dependencies {
-        details = details
-            .into_iter()
-            .filter(|d| d.name.starts_with('a'))
-            .collect();
-    }
+    //if dependencies {
+    //    details = details
+    //        .into_iter()
+    //        .filter(|detail| detail.name.starts_with('a'))
+    //        .collect();
+    //}
 
     if sort {
         details.sort_by(|a, b| a.name.cmp(&b.name));
     }
-    functions::print_details(app_details, details)?;
+    //functions::print_details(app_details, details)?;
 
     Ok(())
 }
