@@ -10,16 +10,16 @@ struct PjsonDetails {
     version: String,
 
     #[serde(default = "default_to_none")]
-    dependencies: Option<(String, String)>,
+    dependencies: Option<HashMap<String, String>>,
 
     #[serde(default = "default_to_none")]
-    dev_dependencies: Option<(String, String)>,
+    dev_dependencies: Option<HashMap<String, String>>,
 
     #[serde(default = "default_to_none")]
-    peer_dependencies: Option<(String, String)>,
+    peer_dependencies: Option<HashMap<String, String>>,
 }
 
-fn default_to_none() -> Option<(String, String)> {
+fn default_to_none() -> Option<HashMap<String, String>> {
     None
 }
 
@@ -29,12 +29,9 @@ pub struct Detail {
     pub name: String,
     pub version: String,
     pub path: PathBuf,
-    pub dependencies: Option<(String, String)>,
-    pub dev_dependencies: Option<(String, String)>,
-    pub peer_dependencies: Option<(String, String)>,
-    //pub dependencies: Option<String>,
-    //pub dev_dependencies: Option<String>,
-    //pub peer_dependencies: Option<String>,
+    pub dependencies: Option<HashMap<String, String>>,
+    pub dev_dependencies: Option<HashMap<String, String>>,
+    pub peer_dependencies: Option<HashMap<String, String>>,
 }
 
 impl Detail {
@@ -47,15 +44,12 @@ impl Detail {
         let pjson_details: PjsonDetails = serde_json::from_str(&pjson_string[..])?;
 
         Ok(Detail {
+            path,
             name: pjson_details.name,
             version: pjson_details.version,
-            path,
             dependencies: pjson_details.dependencies,
             dev_dependencies: pjson_details.dev_dependencies,
             peer_dependencies: pjson_details.peer_dependencies,
-            //dependencies: parse_map(pjson_details.dependencies),
-            //dev_dependencies: parse_map(pjson_details.dev_dependencies),
-            //peer_dependencies: parse_map(pjson_details.peer_dependencies),
         })
     }
 
