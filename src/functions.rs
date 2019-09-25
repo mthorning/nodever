@@ -1,18 +1,11 @@
-use crate::types::detail::Detail;
+use crate::types::detail::{AppDetail, DepDetail};
 use regex::Regex;
 use std::io::{self, Error, ErrorKind, Write};
 use std::path::{Path, PathBuf};
 
-/// Gets the details for the selected dependency.
-pub fn get_dependency_details(base_path: &Path) -> Result<Detail, Error> {
-    let mut path = PathBuf::from(base_path);
-    path.push("package.json");
-    Detail::from(path)
-}
-
 /// Loops through the node_modules directory and pushes the details into a Vec.
 pub fn get_dependencies(
-    deps: &mut Vec<Detail>,
+    deps: &mut Vec<DepDetail>,
     base_path: &Path,
     filter: &Regex,
 ) -> Result<(), Error> {
@@ -41,8 +34,8 @@ pub fn get_dependencies(
                 let mut path = PathBuf::from(base_path);
                 path.push(&folder_name);
 
-                match get_dependency_details(&path) {
-                    Ok(details) => deps.push(details),
+                match DepDetail::new(&path) {
+                    Ok(detail) => deps.push(detail),
                     Err(err) => println!("Error getting {:?}: {}", path, err),
                 }
             }
@@ -51,7 +44,7 @@ pub fn get_dependencies(
     Ok(())
 }
 
-pub fn print_details(app_details: Detail, dep_details: Vec<Detail>) -> Result<(), Error> {
+pub fn print_details(app_details: AppDetail, dep_details: Vec<DepDetail>) -> Result<(), Error> {
     let mut buffer = Vec::new();
     writeln!(
         &mut buffer,
