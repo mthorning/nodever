@@ -1,5 +1,5 @@
-use crate::types::detail::{AppDetail, DepDetail};
-use regex::Regex;
+use crate::types::detail::application_detail::AppDetail;
+use crate::types::detail::dependency_detail::DepDetail;
 use std::io::{self, Error, ErrorKind, Write};
 use std::path::{Path, PathBuf};
 
@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 pub fn get_dependencies(
     deps: &mut Vec<DepDetail>,
     base_path: &Path,
-    filter: &Regex,
+    app_details: &AppDetail,
 ) -> Result<(), Error> {
     let node_modules = match base_path.read_dir() {
         Ok(node_modules) => node_modules,
@@ -29,12 +29,12 @@ pub fn get_dependencies(
             if folder_name.starts_with('@') {
                 let mut path = PathBuf::from(base_path);
                 path.push(&folder_name);
-                get_dependencies(deps, &path, filter)?;
-            } else if filter.is_match(&folder_name) {
+                get_dependencies(deps, &path, app_details)?;
+            } else {
                 let mut path = PathBuf::from(base_path);
                 path.push(&folder_name);
 
-                match DepDetail::new(&path) {
+                match DepDetail::new(&path, app_details) {
                     Ok(detail) => deps.push(detail),
                     Err(err) => println!("Error getting {:?}: {}", path, err),
                 }
