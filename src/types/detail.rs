@@ -87,10 +87,10 @@ pub mod dependency_detail {
     use std::path::{Path, PathBuf};
 
     #[derive(Debug)]
-    pub enum DepType {
-        Dependency(&str),
-        DevDependency(&str),
-        PeerDependency(&str),
+    pub enum DepType<'a> {
+        Dependency(&'a str),
+        DevDependency(&'a str),
+        PeerDependency(&'a str),
     }
 
     /// Holds the name and version values from the package.json files.
@@ -109,15 +109,7 @@ pub mod dependency_detail {
             let pjson_details = super::get_pjson_details(&mut path)?;
             let PjsonDetail { name, version, .. } = pjson_details;
 
-            let is_direct_dep: Option<DepType> = match app_details.dependencies {
-                Some(deps) => {
-                    match deps.get(&name) {
-                        Some(version) => Some(DepType::Dependency(version)),
-                        None => None,
-                    };
-                }
-                None => None,
-            };
+            let is_direct_dep = Self::check_is_direct(name, app_details);
             println!("{:?}", is_direct_dep);
 
             Ok(DepDetail {
@@ -126,6 +118,15 @@ pub mod dependency_detail {
                 name,
                 version,
             })
+        }
+        fn check_is_direct(dep_name: &str, app_details: &AppDetail) -> Option<DepType> {
+            match app_details.dependencies {
+                Some(deps) => match deps.get(dep_name) {
+                    Some(version) => Some(DepType::Dependency(version)),
+                    None => None,
+                },
+                None => None,
+            }
         }
     }
 }
