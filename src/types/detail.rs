@@ -95,16 +95,16 @@ pub mod dependency_detail {
 
     /// Holds the name and version values from the package.json files.
     #[derive(Debug)]
-    pub struct DepDetail {
+    pub struct DepDetail<'a> {
         pub name: String,
         pub version: String,
         pub path: PathBuf,
-        pub is_direct_dep: Option<DepType>,
+        pub is_direct_dep: Option<DepType<'a>>,
     }
 
     impl DepDetail {
         /// Returns a new DepDetail type.
-        pub fn new(base_path: &Path, app_details: &AppDetail) -> Result<DepDetail, Error> {
+        pub fn new<'a>(base_path: &Path, app_details: &'a AppDetail) -> Result<DepDetail<'a>, Error> {
             let mut path = PathBuf::from(base_path);
             let pjson_details = super::get_pjson_details(&mut path)?;
             let PjsonDetail { name, version, .. } = pjson_details;
@@ -119,14 +119,16 @@ pub mod dependency_detail {
                 version,
             })
         }
-        fn check_is_direct(dep_name: &str, app_details: &AppDetail) -> Option<DepType> {
+        fn check_is_direct<'a>(dep_name: &str, app_details: &'a AppDetail) -> Option<DepType<'a>> {
             match app_details.dependencies {
-                Some(deps) => match deps.get(dep_name) {
-                    Some(version) => Some(DepType::Dependency(version)),
-                    None => None,
+                Some(deps) => {
+                    match deps.get(dep_name) {
+                        Some(version) => return Some(DepType::Dependency(&version)),
+                        None => return None,
+                    };
                 },
-                None => None,
-            }
+                None => return None,
+            };
         }
     }
 }
