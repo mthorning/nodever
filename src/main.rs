@@ -9,27 +9,12 @@ use types::cli::Cli;
 
 fn main() -> Result<(), ExitFailure> {
     let args = Cli::from_args();
-    let mut path = args.path;
+    let path = args.path;
     let dependencies = args.dependencies;
-    let filter = Regex::new(if dependencies { ".*" } else { &args.filter })?;
-    let sort = args.sort;
+    let _filter = Regex::new(if dependencies { ".*" } else { &args.filter })?;
+    let _sort = args.sort;
 
-    let app_details = AppDetail::new(&path)?;
-    println!("{:?}", app_details);
-
-    path.push("node_modules");
-
-    let mut details = Vec::new();
-
-    //functions::get_dependencies(&mut details, &path, &filter)?;
-
-    // Build the Vec then filter later
-    functions::get_dependencies(&mut details, &path, &app_details)?;
-
-    if sort {
-        details.sort_by(|a, b| a.name.cmp(&b.name));
-    }
-    //functions::print_details(app_details, details)?;
+    let _app_details = AppDetail::new(path)?;
 
     Ok(())
 }
