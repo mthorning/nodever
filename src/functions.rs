@@ -1,5 +1,5 @@
-use crate::types::detail::application_detail::AppDetail;
-use crate::types::detail::dependency_detail::DepDetail;
+use crate::types::application_detail::AppDetail;
+use crate::types::dependency_detail::DepDetail;
 use std::io::{self, Error, ErrorKind, Write};
 use std::path::{Path, PathBuf};
 

@@ -4,8 +4,8 @@ mod types;
 use exitfailure::ExitFailure;
 use regex::Regex;
 use structopt::StructOpt;
+use types::application_detail::AppDetail;
 use types::cli::Cli;
-use types::detail::application_detail::AppDetail;
 
 fn main() -> Result<(), ExitFailure> {
     let args = Cli::from_args();
