@@ -1,4 +1,3 @@
-mod functions;
 mod types;
 
 use exitfailure::ExitFailure;
@@ -14,7 +13,8 @@ fn main() -> Result<(), ExitFailure> {
     let _filter = Regex::new(if dependencies { ".*" } else { &args.filter })?;
     let _sort = args.sort;
 
-    let _app_details = AppDetail::new(path)?;
+    let app_details = AppDetail::new(path)?;
+    app_details.print()?;
 
     Ok(())
 }

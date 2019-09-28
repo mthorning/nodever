@@ -9,6 +9,16 @@ pub enum DepType {
     Dependency(String),
     DevDependency(String),
     PeerDependency(String),
+    None,
+}
+
+impl DepType {
+    pub fn is_none(&self) -> bool {
+        match *self {
+            DepType::None => true,
+            _ => false,
+        }
+    }
 }
 
 /// Holds the name and version values from the package.json files.
@@ -17,14 +27,14 @@ pub struct DepDetail {
     pub name: String,
     pub version: String,
     pub path: PathBuf,
-    pub is_direct_dep: Option<DepType>,
+    pub is_direct_dep: DepType,
 }
 
 impl DepDetail {
     /// Returns a new DepDetail type.
     pub fn new(base_path: &Path, app_details: &AppDetail) -> Result<DepDetail, Error> {
-        let mut path = PathBuf::from(base_path);
-        let pjson_details = PjsonDetail::new(&mut path)?;
+        let path = PathBuf::from(base_path);
+        let pjson_details = PjsonDetail::new(&path)?;
         let PjsonDetail { name, version, .. } = pjson_details;
 
         // is direct dependency?
@@ -46,8 +56,6 @@ impl DepDetail {
             );
         }
 
-        println!("{} is {:?}", name, is_direct_dep);
-
         Ok(DepDetail {
             path,
             is_direct_dep,
@@ -60,16 +68,16 @@ impl DepDetail {
         dep_name: &str,
         app_dependencies: &Option<HashMap<String, String>>,
         dep_type: F,
-    ) -> Option<DepType>
+    ) -> DepType
     where
         F: Fn(String) -> DepType,
     {
         match app_dependencies {
             Some(deps) => match deps.get(dep_name) {
-                Some(requested_version) => Some(dep_type(requested_version.to_string())),
-                None => None,
+                Some(requested_version) => dep_type(requested_version.to_string()),
+                None => DepType::None,
             },
-            None => None,
+            None => DepType::None,
         }
     }
 }
