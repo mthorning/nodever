@@ -78,6 +78,11 @@ impl AppDetail {
                 }
             }
         }
+
+        if self.args.sort {
+            self.dependency_details.sort_by(|a, b| a.name.cmp(&b.name));
+        }
+
         Ok(())
     }
 
