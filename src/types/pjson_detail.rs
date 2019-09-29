@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::{Error, ErrorKind, Read};
 use std::path::PathBuf;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PjsonDetail {
     pub name: String,
