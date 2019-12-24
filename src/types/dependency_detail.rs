@@ -2,7 +2,6 @@ use crate::types::application_detail::AppDetail;
 use crate::types::pjson_detail::PjsonDetail;
 use std::collections::HashMap;
 use std::io::Error;
-use std::mem;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, PartialEq)]
@@ -19,9 +18,6 @@ impl DepType {
             DepType::None => true,
             _ => false,
         }
-    }
-    pub fn matches(&self, dep_type: &Self) -> bool {
-        mem::discriminant(self) == mem::discriminant(dep_type)
     }
 }
 

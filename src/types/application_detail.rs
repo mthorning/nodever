@@ -1,9 +1,9 @@
 use crate::types::cli::Cli;
-use crate::types::dependency_detail::{DepDetail, DepType};
+use crate::types::dependency_detail::DepDetail;
 use crate::types::pjson_detail::PjsonDetail;
 use regex::Regex;
 use std::collections::HashMap;
-use std::io::{self, Error, ErrorKind, Write};
+use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 
 /// Holds the name and version values from the package.json files.
@@ -15,7 +15,7 @@ pub struct AppDetail {
     pub dev_dependencies: Option<HashMap<String, String>>,
     pub peer_dependencies: Option<HashMap<String, String>>,
     pub dependency_details: Vec<DepDetail>,
-    args: Cli,
+    pub args: Cli,
 }
 
 impl AppDetail {
@@ -92,74 +92,12 @@ impl AppDetail {
     }
 
     fn filter_by_flags(&self, detail: &DepDetail) -> bool {
-        let Cli {
-            direct_dep,
-            direct_dev,
-            direct_peer,
-            ..
-        } = self.args;
+        let Cli { direct_dep, .. } = self.args;
 
-        if direct_dep
-            && !detail
-                .is_direct_dep
-                .matches(&DepType::Dependency(String::new()))
-        {
-            return false;
-        }
-
-        if direct_dev
-            && !detail
-                .is_direct_dep
-                .matches(&DepType::DevDependency(String::new()))
-        {
-            return false;
-        }
-
-        if direct_peer
-            && !detail
-                .is_direct_dep
-                .matches(&DepType::PeerDependency(String::new()))
-        {
+        if direct_dep && detail.is_direct_dep.is_none() {
             return false;
         }
 
         true
-    }
-
-    pub fn print(self) -> Result<(), Error> {
-        let mut buffer = Vec::new();
-        writeln!(
-            &mut buffer,
-            "\n{} matches found in version {} of {}. \n",
-            self.dependency_details.len(),
-            self.version,
-            self.name
-        )?;
-
-        if !self.dependency_details.is_empty() {
-            for detail in self.dependency_details {
-                writeln!(
-                    &mut buffer,
-                    "{}: {} {}",
-                    detail.name,
-                    detail.version,
-                    AppDetail::dep_indicator(&detail.is_direct_dep)
-                )?;
-            }
-        }
-
-        let stdout = io::stdout();
-        let mut handle = stdout.lock();
-        handle.write_all(buffer.as_mut_slice())?;
-        Ok(())
-    }
-
-    fn dep_indicator(is_direct: &DepType) -> String {
-        match is_direct {
-            DepType::Dependency(_) => String::from("(dependency)"),
-            DepType::DevDependency(_) => String::from("(devDependency)"),
-            DepType::PeerDependency(_) => String::from("(peerDependency)"),
-            DepType::None => String::from(""),
-        }
     }
 }

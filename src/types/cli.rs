@@ -8,22 +8,24 @@ pub struct Cli {
     pub filter: String,
 
     /// The path to the root of the Nexcenter app.
-    #[structopt(short, long, parse(from_os_str), default_value = ".")]
+    #[structopt(long, parse(from_os_str), default_value = ".")]
     pub path: PathBuf,
 
     /// Prevent alphabetically sorting of results.
-    #[structopt(long, short = "x")]
+    #[structopt(long = "dont-sort", short = "x")]
     pub dont_sort: bool,
 
     /// Show only direct dependencies.
-    #[structopt(long = "dependencies-only", short = "S")]
+    #[structopt(long = "direct-only", short = "d")]
     pub direct_dep: bool,
-
-    /// Show only direct devDependencies.
-    #[structopt(long = "devDependencies-only", short = "D")]
-    pub direct_dev: bool,
-
-    /// Show only direct peerDependencies.
-    #[structopt(long = "peerDependencies-only", short = "P")]
-    pub direct_peer: bool,
 }
+
+//#[derive(StructOpt)]
+//pub enum Compare {
+//  #[structopt(parse(from_os_str), default_value = ".")]
+//  pub dir_one,
+//
+//  #[structopt(parse(from_os_str), default_value = ".")]
+//  pub dir_two
+//
+//}

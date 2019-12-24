@@ -3,4 +3,4 @@
 test_dir/
 node_modules/
 package.json
-
+test*/

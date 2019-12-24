@@ -1,3 +1,4 @@
+mod print;
 mod types;
 
 use exitfailure::ExitFailure;
@@ -7,7 +8,7 @@ use types::cli::Cli;
 
 fn main() -> Result<(), ExitFailure> {
     let app_details = AppDetail::new(Cli::from_args())?;
-    app_details.print()?;
+    print::print_details(app_details)?;
 
     Ok(())
 }
