@@ -1,29 +1,24 @@
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(StructOpt)]
 pub struct Cli {
     /// The pattern to filter folders in node_modules.
     #[structopt(default_value = ".*")]
     pub filter: String,
 
     /// The path to the root of the Nexcenter app.
-    #[structopt(short, long, parse(from_os_str), default_value = ".")]
+    #[structopt(long, parse(from_os_str), default_value = ".")]
     pub path: PathBuf,
 
     /// Prevent alphabetically sorting of results.
-    #[structopt(long, short = "x")]
+    #[structopt(long = "dont-sort", short = "x")]
     pub dont_sort: bool,
 
     /// Show only direct dependencies.
-    #[structopt(long = "dependencies-only", short = "S")]
+    #[structopt(long = "direct-only", short = "d")]
     pub direct_dep: bool,
 
-    /// Show only direct devDependencies.
-    #[structopt(long = "devDependencies-only", short = "D")]
-    pub direct_dev: bool,
-
-    /// Show only direct peerDependencies.
-    #[structopt(long = "peerDependencies-only", short = "P")]
-    pub direct_peer: bool,
+    #[structopt(long)]
+    pub diff: Option<PathBuf>,
 }

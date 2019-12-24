@@ -2,36 +2,35 @@ use crate::types::application_detail::AppDetail;
 use crate::types::pjson_detail::PjsonDetail;
 use std::collections::HashMap;
 use std::io::Error;
-use std::mem;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DepType {
-    Dependency(String),
-    DevDependency(String),
-    PeerDependency(String),
-    None,
+    Dependency,
+    DevDependency,
+    PeerDependency,
+    ChildDependency,
 }
 
-impl DepType {
-    pub fn is_none(&self) -> bool {
-        match *self {
-            DepType::None => true,
-            _ => false,
-        }
-    }
-    pub fn matches(&self, dep_type: &Self) -> bool {
-        mem::discriminant(self) == mem::discriminant(dep_type)
-    }
+#[derive(Clone)]
+pub enum DepKey {
+    Version,
+    DepType,
+    PjsonVersion,
+}
+#[derive(Clone)]
+pub enum DepTuple {
+    Main(DepKey),
+    Diff(DepKey),
 }
 
 /// Holds the name and version values from the package.json files.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DepDetail {
     pub name: String,
     pub version: String,
-    pub path: PathBuf,
-    pub is_direct_dep: DepType,
+    pub pjson_version: Option<String>,
+    pub dep_type: DepType,
 }
 
 impl DepDetail {
@@ -41,47 +40,52 @@ impl DepDetail {
         let pjson_details = PjsonDetail::new(&path)?;
         let PjsonDetail { name, version, .. } = pjson_details;
 
-        // is direct dependency?
-        let mut is_direct_dep =
-            Self::check_is_direct(&name, &app_details.dependencies, DepType::Dependency);
-
-        // is direct devDependency?
-        if is_direct_dep.is_none() {
-            is_direct_dep =
-                Self::check_is_direct(&name, &app_details.dev_dependencies, DepType::DevDependency);
+        // is a direct dependency?
+        match Self::get_pjson_details(&name, &app_details.dependencies) {
+            Some(pjson_version) => Ok(DepDetail {
+                name,
+                version,
+                pjson_version: Some(pjson_version),
+                dep_type: DepType::Dependency,
+            }),
+            // is a direct devDependency?
+            None => match Self::get_pjson_details(&name, &app_details.dev_dependencies) {
+                Some(pjson_version) => Ok(DepDetail {
+                    name,
+                    version,
+                    pjson_version: Some(pjson_version),
+                    dep_type: DepType::DevDependency,
+                }),
+                // is a direct peerDependency?
+                None => match Self::get_pjson_details(&name, &app_details.peer_dependencies) {
+                    Some(pjson_version) => Ok(DepDetail {
+                        name,
+                        version,
+                        pjson_version: Some(pjson_version),
+                        dep_type: DepType::PeerDependency,
+                    }),
+                    // must be a childDependency
+                    None => Ok(DepDetail {
+                        name,
+                        version,
+                        pjson_version: None,
+                        dep_type: DepType::ChildDependency,
+                    }),
+                },
+            },
         }
-
-        // is direct peerDependency?
-        if is_direct_dep.is_none() {
-            is_direct_dep = Self::check_is_direct(
-                &name,
-                &app_details.peer_dependencies,
-                DepType::PeerDependency,
-            );
-        }
-
-        Ok(DepDetail {
-            path,
-            is_direct_dep,
-            name,
-            version,
-        })
     }
 
-    fn check_is_direct<F>(
+    fn get_pjson_details(
         dep_name: &str,
         app_dependencies: &Option<HashMap<String, String>>,
-        dep_type: F,
-    ) -> DepType
-    where
-        F: Fn(String) -> DepType,
-    {
+    ) -> Option<String> {
         match app_dependencies {
             Some(deps) => match deps.get(dep_name) {
-                Some(requested_version) => dep_type(requested_version.to_string()),
-                None => DepType::None,
+                Some(pjson_version) => Some(pjson_version.to_owned()),
+                None => None,
             },
-            None => DepType::None,
+            None => None,
         }
     }
 }
