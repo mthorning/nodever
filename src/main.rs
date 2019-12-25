@@ -8,7 +8,7 @@ use types::cli::Cli;
 
 fn main() -> Result<(), ExitFailure> {
     let app_details = AppDetail::new(Cli::from_args())?;
-    print::print_details(app_details)?;
+    print::print_details(&app_details)?;
 
     Ok(())
 }
