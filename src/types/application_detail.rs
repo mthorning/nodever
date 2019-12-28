@@ -1,4 +1,3 @@
-use crate::types::cli::Cli;
 use crate::types::dependency_detail::DepDetail;
 use crate::types::pjson_detail::PjsonDetail;
 use regex::Regex;
@@ -6,8 +5,15 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 
+// Mapping of CLI options.
+pub struct Args {
+    pub filter: String,
+    pub path: PathBuf,
+    pub dont_sort: bool,
+    pub direct_dep: bool,
+}
+
 /// Holds the name and version values from the package.json files.
-#[derive(Debug)]
 pub struct AppDetail {
     pub name: String,
     pub version: String,
@@ -15,12 +21,12 @@ pub struct AppDetail {
     pub dev_dependencies: Option<HashMap<String, String>>,
     pub peer_dependencies: Option<HashMap<String, String>>,
     pub dependency_details: Vec<DepDetail>,
-    pub args: Cli,
+    pub args: Args,
 }
 
 impl AppDetail {
     /// Returns a new AppDetail type.
-    pub fn new(args: Cli) -> Result<AppDetail, Error> {
+    pub fn new(args: Args) -> Result<AppDetail, Error> {
         let pjson_details = PjsonDetail::new(&args.path)?;
         let dependency_details = Vec::new();
 
@@ -92,7 +98,7 @@ impl AppDetail {
     }
 
     fn filter_by_flags(&self, detail: &DepDetail) -> bool {
-        let Cli { direct_dep, .. } = self.args;
+        let Args { direct_dep, .. } = self.args;
 
         if direct_dep && detail.pjson_version.is_none() {
             return false;
