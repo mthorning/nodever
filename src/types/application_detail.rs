@@ -94,7 +94,7 @@ impl AppDetail {
     fn filter_by_flags(&self, detail: &DepDetail) -> bool {
         let Cli { direct_dep, .. } = self.args;
 
-        if direct_dep && detail.is_direct_dep.is_none() {
+        if direct_dep && detail.pjson_version.is_none() {
             return false;
         }
 
