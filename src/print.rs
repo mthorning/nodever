@@ -10,7 +10,7 @@ enum Mode {
     DirectDepsList,
 }
 
-struct Schema(Mode, Vec<Col>);
+struct Schema(Mode, Vec<Col>, &'static str);
 struct Col(&'static str, DepValue);
 
 fn get_table_cols(app_details: &AppDetail) -> Schema {
@@ -23,6 +23,7 @@ fn get_table_cols(app_details: &AppDetail) -> Schema {
                 Col("PJSON", DepValue::PjsonVersion),
                 Col("Version", DepValue::Version),
             ],
+            "Packages which have resolved to a different version are highlighted in blue.",
         );
     }
     Schema(
@@ -31,26 +32,41 @@ fn get_table_cols(app_details: &AppDetail) -> Schema {
             Col("Package", DepValue::Name),
             Col("Version", DepValue::Version),
         ],
+        "Direct dependencies (listed in the package.json) are highlighted in blue.",
     )
 }
 
 pub fn print_details(app_details: &AppDetail) -> Result<(), Error> {
     let schema = get_table_cols(app_details);
     print_table(&schema, app_details);
-    print_completion_message(app_details)?;
+    print_completion_message(&schema, app_details)?;
     Ok(())
 }
 
 fn print_table(schema: &Schema, app_details: &AppDetail) {
     if !app_details.dependency_details.is_empty() {
         let mut table = Table::new();
+        add_table_headers(&mut table, schema);
         add_table_rows(app_details, &mut table, schema);
         table.printstd();
     }
 }
 
+fn add_table_headers(table: &mut Table, schema: &Schema) {
+    let Schema(_, cols, _) = schema;
+
+    let mut row_vec = Vec::new();
+    for col in cols.iter() {
+        let Col(title, _) = col;
+        row_vec.push(Cell::new(title).style_spec("BcFw"));
+    }
+
+    let row = Row::new(row_vec);
+    table.add_row(row);
+}
+
 fn add_table_rows(app_details: &AppDetail, table: &mut Table, schema: &Schema) {
-    let Schema(mode, cols) = schema;
+    let Schema(mode, cols, _) = schema;
     for detail in app_details.dependency_details.iter() {
         let mut row_vec = Vec::new();
         for col in cols.iter() {
@@ -76,9 +92,9 @@ fn format_row(row: &mut Row, detail: &DepDetail, mode: &Mode) {
         Mode::DirectDepsList => {
             if let Some(pjson_version) = &detail.pjson_version {
                 let version_re = Regex::new(&detail.version).unwrap();
-                if version_re.is_match(&pjson_version) {
+                if !version_re.is_match(&pjson_version) {
                     for cell in row.iter_mut() {
-                        cell.style(Attr::ForegroundColor(color::CYAN));
+                        cell.style(Attr::ForegroundColor(color::BLUE));
                     }
                 }
             }
@@ -86,14 +102,16 @@ fn format_row(row: &mut Row, detail: &DepDetail, mode: &Mode) {
     }
 }
 
-fn print_completion_message(app_details: &AppDetail) -> Result<(), Error> {
+fn print_completion_message(schema: &Schema, app_details: &AppDetail) -> Result<(), Error> {
+    let Schema(_, _, message) = schema;
     let mut buffer = Vec::new();
     writeln!(
         &mut buffer,
-        "\n{} matches found in version {} of {}. \n",
+        "\n{} matches found in version {} of {}.\n{}\n",
         app_details.dependency_details.len(),
         app_details.version,
-        app_details.name
+        app_details.name,
+        message
     )?;
     let stdout = io::stdout();
     let mut handle = stdout.lock();
