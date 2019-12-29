@@ -12,6 +12,7 @@ pub enum DepType {
     ChildDependency,
 }
 
+#[derive(Clone)]
 pub enum DepValue {
     Name,
     Version,

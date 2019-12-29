@@ -5,27 +5,33 @@ use exitfailure::ExitFailure;
 use structopt::StructOpt;
 use types::application_detail::{AppDetail, Args};
 use types::cli::Cli;
+use types::output_schema::{Schema, Schematic};
 
 fn main() -> Result<(), ExitFailure> {
     let cli = Cli::from_args();
     let primary_args = Args {
-        filter: cli.filter,
-        path: cli.path,
+        filter: cli.filter.clone(),
+        path: cli.path.clone(),
         dont_sort: cli.dont_sort,
         direct_dep: cli.direct_dep,
     };
+    let app_details_one = AppDetail::new(primary_args)?;
 
     if let Some(diff_path) = cli.diff {
-        let app_one_details = AppDetail::new(primary_args)?;
-        let app_two_details = AppDetail::new(Args {
+        let secondary_args = Args {
+            filter: cli.filter,
             path: diff_path,
-            ..primary_args
-        })?;
-        print::print_details(&app_two_details)?;
+            dont_sort: cli.dont_sort,
+            direct_dep: cli.direct_dep,
+        };
+        let app_details_two = AppDetail::new(secondary_args)?;
+    //print::print_diff(&app_details_one, &app_details_two)?;
     } else {
-        let app_details = AppDetail::new(primary_args)?;
-        print::print_details(&app_details)?;
-    }
+        match cli.direct_dep {
+            true => print::print_details(Schema::new(Schematic::Direct(&app_details_one)))?,
+            false => print::print_details(Schema::new(Schematic::Plain(&app_details_one)))?,
+        }
+    };
 
     Ok(())
 }

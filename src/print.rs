@@ -1,59 +1,34 @@
 use super::types::application_detail::AppDetail;
 use super::types::dependency_detail::{DepDetail, DepValue};
+use super::types::output_schema::{Col, DiffCols, Mode, Schema};
 use prettytable::{color, Attr, Cell, Row, Table};
 use regex::Regex;
 use std::io::{self, Error, Write};
 
-#[derive(PartialEq)]
-enum Mode {
-    PlainList,
-    DirectDepsList,
-}
-
-struct Schema(Mode, Vec<Col>, &'static str);
-struct Col(&'static str, DepValue);
-
-fn get_table_cols(app_details: &AppDetail) -> Schema {
-    if app_details.args.direct_dep {
-        return Schema(
-            Mode::DirectDepsList,
-            vec![
-                Col("Package", DepValue::Name),
-                Col("Type", DepValue::DepType),
-                Col("PJSON", DepValue::PjsonVersion),
-                Col("Version", DepValue::Version),
-            ],
-            "Packages which have resolved to a different version are highlighted in blue.",
-        );
-    }
-    Schema(
-        Mode::PlainList,
-        vec![
-            Col("Package", DepValue::Name),
-            Col("Version", DepValue::Version),
-        ],
-        "Direct dependencies (listed in the package.json) are highlighted in blue.",
-    )
-}
-
-pub fn print_details(app_details: &AppDetail) -> Result<(), Error> {
-    let schema = get_table_cols(app_details);
-    print_table(&schema, app_details);
-    print_completion_message(&schema, app_details)?;
+pub fn print_details(schema: Schema) -> Result<(), Error> {
+    print_table(&schema);
+    print_completion_message(&schema)?;
     Ok(())
 }
 
-fn print_table(schema: &Schema, app_details: &AppDetail) {
+fn print_table(schema: &Schema) {
+    let Schema {
+        app_details,
+        mode,
+        cols,
+        diff,
+        ..
+    } = schema;
     if !app_details.dependency_details.is_empty() {
         let mut table = Table::new();
         add_table_headers(&mut table, schema);
-        add_table_rows(app_details, &mut table, schema);
+        add_table_rows(app_details, &mut table, mode, cols, diff);
         table.printstd();
     }
 }
 
 fn add_table_headers(table: &mut Table, schema: &Schema) {
-    let Schema(_, cols, _) = schema;
+    let Schema { cols, .. } = schema;
 
     let mut row_vec = Vec::new();
     for col in cols.iter() {
@@ -65,11 +40,16 @@ fn add_table_headers(table: &mut Table, schema: &Schema) {
     table.add_row(row);
 }
 
-fn add_table_rows(app_details: &AppDetail, table: &mut Table, schema: &Schema) {
-    let Schema(mode, cols, _) = schema;
+fn add_table_rows(
+    app_details: &AppDetail,
+    table: &mut Table,
+    mode: &Mode,
+    cols: &Vec<Col>,
+    diff: &Option<&DiffCols>,
+) {
     for detail in app_details.dependency_details.iter() {
         let mut row_vec = Vec::new();
-        for col in cols.iter() {
+        for col in cols.to_vec().iter() {
             let Col(_, record) = col;
             row_vec.push(Cell::new(detail.get_record_str(record)));
         }
@@ -102,8 +82,12 @@ fn format_row(row: &mut Row, detail: &DepDetail, mode: &Mode) {
     }
 }
 
-fn print_completion_message(schema: &Schema, app_details: &AppDetail) -> Result<(), Error> {
-    let Schema(_, _, message) = schema;
+fn print_completion_message(schema: &Schema) -> Result<(), Error> {
+    let Schema {
+        message,
+        app_details,
+        ..
+    } = schema;
     let mut buffer = Vec::new();
     writeln!(
         &mut buffer,

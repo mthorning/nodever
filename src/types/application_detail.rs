@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 
-// Mapping of CLI options.
 pub struct Args {
     pub filter: String,
     pub path: PathBuf,
