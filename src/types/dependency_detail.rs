@@ -4,28 +4,74 @@ use std::collections::HashMap;
 use std::io::Error;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DepType {
     Dependency,
     DevDependency,
     PeerDependency,
     ChildDependency,
+    None,
 }
 
 #[derive(Clone)]
-pub enum DepValue {
+pub enum DepKey {
     Name,
     Version,
     DepType,
     PjsonVersion,
 }
+#[derive(Clone)]
+pub enum DepTuple {
+    Main(DepKey),
+    Diff(DepKey),
+}
+
+#[derive(Debug, Clone)]
+pub struct Dependency(pub Option<DepDetail>, pub Option<DepDetail>);
+
+impl Dependency {
+    pub fn get_record_str(self: &Self, dep_tuple: &DepTuple) -> &str {
+        let (dep_data, dep_key) = match dep_tuple {
+            DepTuple::Main(key) => {
+                let Dependency(data, _) = self;
+                (data, key)
+            }
+            DepTuple::Diff(key) => {
+                let Dependency(_, data) = self;
+                (data, key)
+            }
+        };
+
+        if let Some(detail) = dep_data {
+            match dep_key {
+                DepKey::Name => &detail.name,
+                DepKey::Version => &detail.version,
+                DepKey::DepType => match detail.dep_type {
+                    DepType::Dependency => "D",
+                    DepType::DevDependency => "dD",
+                    DepType::PeerDependency => "pD",
+                    DepType::ChildDependency => "child",
+                    DepType::None => "",
+                },
+                DepKey::PjsonVersion => {
+                    if let Some(pjson_version) = &detail.pjson_version {
+                        pjson_version
+                    } else {
+                        ""
+                    }
+                }
+            }
+        } else {
+            ""
+        }
+    }
+}
 
 /// Holds the name and version values from the package.json files.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DepDetail {
     pub name: String,
     pub version: String,
-    pub path: PathBuf,
     pub pjson_version: Option<String>,
     pub dep_type: DepType,
 }
@@ -42,7 +88,6 @@ impl DepDetail {
             Some(pjson_version) => Ok(DepDetail {
                 name,
                 version,
-                path,
                 pjson_version: Some(pjson_version),
                 dep_type: DepType::Dependency,
             }),
@@ -51,7 +96,6 @@ impl DepDetail {
                 Some(pjson_version) => Ok(DepDetail {
                     name,
                     version,
-                    path,
                     pjson_version: Some(pjson_version),
                     dep_type: DepType::DevDependency,
                 }),
@@ -60,7 +104,6 @@ impl DepDetail {
                     Some(pjson_version) => Ok(DepDetail {
                         name,
                         version,
-                        path,
                         pjson_version: Some(pjson_version),
                         dep_type: DepType::PeerDependency,
                     }),
@@ -68,32 +111,11 @@ impl DepDetail {
                     None => Ok(DepDetail {
                         name,
                         version,
-                        path,
                         pjson_version: None,
                         dep_type: DepType::ChildDependency,
                     }),
                 },
             },
-        }
-    }
-
-    pub fn get_record_str(self: &Self, dep_value: &DepValue) -> &str {
-        match dep_value {
-            DepValue::Name => &self.name,
-            DepValue::Version => &self.version,
-            DepValue::DepType => match self.dep_type {
-                DepType::Dependency => "D",
-                DepType::DevDependency => "dD",
-                DepType::PeerDependency => "pD",
-                DepType::ChildDependency => "",
-            },
-            DepValue::PjsonVersion => {
-                if let Some(pjson_version) = &self.pjson_version {
-                    pjson_version.as_str()
-                } else {
-                    ""
-                }
-            }
         }
     }
 

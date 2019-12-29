@@ -19,9 +19,9 @@ fn main() -> Result<(), ExitFailure> {
 
     if let Some(diff_path) = cli.diff {
         let diff_app_args = Args {
-            filter: cli.filter,
             path: diff_path,
-            dont_sort: cli.dont_sort,
+            dont_sort: false,
+            filter: cli.filter,
             direct_dep: cli.direct_dep,
         };
         let diff_app_details = AppDetail::new(diff_app_args)?;

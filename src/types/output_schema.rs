@@ -1,5 +1,5 @@
 use crate::types::application_detail::AppDetail;
-use crate::types::dependency_detail::DepValue;
+use crate::types::dependency_detail::{DepKey, DepTuple};
 
 pub enum Schematic<'a> {
     Plain(&'a AppDetail),
@@ -15,15 +15,13 @@ pub enum Mode {
 }
 
 #[derive(Clone)]
-pub struct Col(pub &'static str, pub DepValue);
-
-pub struct DiffSchema<'a>(Vec<Col>, &'a AppDetail);
+pub struct Col(pub &'static str, pub DepTuple);
 
 pub struct Schema<'a> {
     pub app_details: &'a AppDetail,
     pub mode: Mode,
     pub cols: Vec<Col>,
-    pub diff: Option<DiffSchema<'a>>,
+    pub diff: Option<&'a AppDetail>,
     pub message: &'static str,
 }
 
@@ -34,10 +32,10 @@ impl<'a> Schema<'a> {
                 app_details,
                 mode: Mode::DirectDepsList,
                 cols: vec![
-                    Col("Package", DepValue::Name),
-                    Col("Type", DepValue::DepType),
-                    Col("PJSON", DepValue::PjsonVersion),
-                    Col("Version", DepValue::Version),
+                    Col("Package", DepTuple::Main(DepKey::Name)),
+                    Col("Type", DepTuple::Main(DepKey::DepType)),
+                    Col("PJSON", DepTuple::Main(DepKey::PjsonVersion)),
+                    Col("Version", DepTuple::Main(DepKey::Version)),
                 ],
                 diff: None,
                 message:
@@ -47,8 +45,8 @@ impl<'a> Schema<'a> {
                 app_details,
                 mode: Mode::PlainList,
                 cols: vec![
-                    Col("Package", DepValue::Name),
-                    Col("Version", DepValue::Version),
+                    Col("Package", DepTuple::Main(DepKey::Name)),
+                    Col("Version", DepTuple::Main(DepKey::Version)),
                 ],
                 diff: None,
                 message:
@@ -58,19 +56,15 @@ impl<'a> Schema<'a> {
                 app_details,
                 mode: Mode::PlainList,
                 cols: vec![
-                    Col("Package", DepValue::Name),
-                    Col("Type", DepValue::DepType),
-                    Col("PJSON", DepValue::PjsonVersion),
-                    Col("Version", DepValue::Version),
+                    Col("Package", DepTuple::Main(DepKey::Name)),
+                    Col("Type", DepTuple::Main(DepKey::DepType)),
+                    Col("PJSON", DepTuple::Main(DepKey::PjsonVersion)),
+                    Col("Version", DepTuple::Main(DepKey::Version)),
+                    Col("Type", DepTuple::Diff(DepKey::DepType)),
+                    Col("PJSON", DepTuple::Diff(DepKey::PjsonVersion)),
+                    Col("Version", DepTuple::Diff(DepKey::Version)),
                 ],
-                diff: Some(DiffSchema(
-                    vec![
-                        Col("Type", DepValue::DepType),
-                        Col("PJSON", DepValue::PjsonVersion),
-                        Col("Version", DepValue::Version),
-                    ],
-                    diff_app_details,
-                )),
+                diff: Some(diff_app_details),
                 message: "This needs to say something",
             },
         }
