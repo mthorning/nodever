@@ -41,13 +41,13 @@ impl AppDetail {
         let mut base_path = PathBuf::from(&new_app.args.path);
         base_path.push("node_modules");
 
-        new_app.get_dependencies(&base_path)?;
+        new_app.collect_dependencies(&base_path)?;
 
         Ok(new_app)
     }
 
     /// Loops through the node_modules directory and pushes the details into a Vec.
-    fn get_dependencies(&mut self, base_path: &PathBuf) -> Result<(), Error> {
+    fn collect_dependencies(&mut self, base_path: &PathBuf) -> Result<(), Error> {
         let node_modules = match base_path.read_dir() {
             Ok(node_modules) => node_modules,
             Err(_) => {
@@ -68,7 +68,7 @@ impl AppDetail {
                 let mut dep_path = PathBuf::from(&base_path);
                 if folder_name.starts_with('@') {
                     dep_path.push(&folder_name);
-                    AppDetail::get_dependencies(self, &dep_path)?;
+                    AppDetail::collect_dependencies(self, &dep_path)?;
                 } else {
                     dep_path.push(&folder_name);
 

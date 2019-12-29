@@ -1,6 +1,6 @@
 use super::types::application_detail::AppDetail;
 use super::types::dependency_detail::{DepDetail, DepValue};
-use super::types::output_schema::{Col, DiffCols, Mode, Schema};
+use super::types::output_schema::{Col, DiffSchema, Mode, Schema};
 use prettytable::{color, Attr, Cell, Row, Table};
 use regex::Regex;
 use std::io::{self, Error, Write};
@@ -45,7 +45,7 @@ fn add_table_rows(
     table: &mut Table,
     mode: &Mode,
     cols: &Vec<Col>,
-    diff: &Option<&DiffCols>,
+    diff: &Option<DiffSchema>,
 ) {
     for detail in app_details.dependency_details.iter() {
         let mut row_vec = Vec::new();
@@ -79,6 +79,7 @@ fn format_row(row: &mut Row, detail: &DepDetail, mode: &Mode) {
                 }
             }
         }
+        _ => (),
     }
 }
 
