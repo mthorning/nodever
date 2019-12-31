@@ -47,9 +47,9 @@ impl Dependency {
                 DepKey::Name => &detail.name,
                 DepKey::Version => &detail.version,
                 DepKey::DepType => match detail.dep_type {
-                    DepType::Dependency => "D",
-                    DepType::DevDependency => "dD",
-                    DepType::PeerDependency => "pD",
+                    DepType::Dependency => "dep",
+                    DepType::DevDependency => "dev",
+                    DepType::PeerDependency => "peer",
                     DepType::ChildDependency => "child",
                     DepType::None => "",
                 },

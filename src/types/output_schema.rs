@@ -54,18 +54,18 @@ impl<'a> Schema<'a> {
             },
             Schematic::Diff(app_details, diff_app_details) => Schema {
                 app_details,
-                mode: Mode::PlainList,
+                mode: Mode::DiffList,
                 cols: vec![
                     Col("Package", DepTuple::Main(DepKey::Name)),
-                    Col("Type", DepTuple::Main(DepKey::DepType)),
-                    Col("PJSON", DepTuple::Main(DepKey::PjsonVersion)),
-                    Col("Version", DepTuple::Main(DepKey::Version)),
-                    Col("Type", DepTuple::Diff(DepKey::DepType)),
-                    Col("PJSON", DepTuple::Diff(DepKey::PjsonVersion)),
-                    Col("Version", DepTuple::Diff(DepKey::Version)),
+                    Col("Type 1", DepTuple::Main(DepKey::DepType)),
+                    Col("PJSON 1", DepTuple::Main(DepKey::PjsonVersion)),
+                    Col("Version 1", DepTuple::Main(DepKey::Version)),
+                    Col("Type 2", DepTuple::Diff(DepKey::DepType)),
+                    Col("PJSON 2", DepTuple::Diff(DepKey::PjsonVersion)),
+                    Col("Version 2", DepTuple::Diff(DepKey::Version)),
                 ],
                 diff: Some(diff_app_details),
-                message: "This needs to say something",
+                message: "Packages with different versions are highlighted in blue.",
             },
         }
     }

@@ -15,9 +15,6 @@ fn print_table(schema: &Schema) {
     if !schema.app_details.dependency_details.is_empty() {
         let mut table = Table::new();
         let dependencies = munge_dependencies(schema);
-        // for dep in dependencies.iter() {
-        //     println!("{:?}", dep);
-        // }
         add_table_headers(&mut table, schema);
         add_table_rows(&mut table, schema, dependencies);
         table.printstd();
@@ -41,16 +38,6 @@ fn munge_dependencies(schema: &Schema) -> Vec<Dependency> {
             let mut new_dependencies = Vec::new();
             for diff_app_dep_detail in diff_app_details.dependency_details.iter() {
                 let mut found = false;
-                // for munged_dep in munged_deps.to_vec().iter_mut() {
-                //     let Dependency(app_dep, ref mut diff_dep) = munged_dep;
-                //     if let Some(dep) = app_dep {
-                //         if dep.name == diff_app_dep_detail.name {
-                //             *diff_dep = Some(diff_app_dep_detail.to_owned());
-                //             found = true;
-                //             break;
-                //         }
-                //     }
-                // }
                 for (i, munged_dep) in munged_deps.to_vec().iter().enumerate() {
                     let Dependency(app_dep, _) = munged_dep;
                     if let Some(dep) = app_dep {
@@ -109,24 +96,29 @@ fn add_table_rows(table: &mut Table, schema: &Schema, dependencies: Vec<Dependen
                 row_vec.push(Cell::new(dependency.get_record_str(record)));
             }
             let mut row = Row::new(row_vec);
-            format_row(&mut row, dep_details, &mode);
+            format_row(&mut row, &mode, dep_details, diff_dep_details);
             table.add_row(row);
         }
     }
 }
 
-fn format_row(row: &mut Row, dependency: &DepDetail, mode: &Mode) {
+fn format_row(
+    row: &mut Row,
+    mode: &Mode,
+    dep_details: &DepDetail,
+    diff_dep_details: &Option<DepDetail>,
+) {
     match mode {
         Mode::PlainList => {
-            if dependency.pjson_version != None {
+            if dep_details.pjson_version != None {
                 for cell in row.iter_mut() {
                     cell.style(Attr::ForegroundColor(color::BLUE));
                 }
             }
         }
         Mode::DirectDepsList => {
-            if let Some(pjson_version) = &dependency.pjson_version {
-                let version_re = Regex::new(&dependency.version).unwrap();
+            if let Some(pjson_version) = &dep_details.pjson_version {
+                let version_re = Regex::new(&dep_details.version).unwrap();
                 if !version_re.is_match(&pjson_version) {
                     for cell in row.iter_mut() {
                         cell.style(Attr::ForegroundColor(color::BLUE));
@@ -134,7 +126,15 @@ fn format_row(row: &mut Row, dependency: &DepDetail, mode: &Mode) {
                 }
             }
         }
-        _ => (),
+        Mode::DiffList => {
+            if let Some(diff_deps) = diff_dep_details {
+                if dep_details.version != "" && dep_details.version != diff_deps.version {
+                    for cell in row.iter_mut() {
+                        cell.style(Attr::ForegroundColor(color::BLUE));
+                    }
+                }
+            }
+        }
     }
 }
 
