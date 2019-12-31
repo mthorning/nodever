@@ -46,15 +46,6 @@ impl AppDetail {
         Ok(new_app)
     }
 
-    pub fn get_dependency_detail(&self, name: &str) -> Option<&DepDetail> {
-        for detail in self.dependency_details.iter() {
-            if detail.name == name {
-                return Some(detail);
-            }
-        }
-        None
-    }
-
     /// Loops through the node_modules directory and pushes the details into a Vec.
     fn collect_dependencies(&mut self, base_path: &PathBuf) -> Result<(), Error> {
         let node_modules = match base_path.read_dir() {

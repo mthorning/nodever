@@ -10,12 +10,10 @@ pub enum DepType {
     DevDependency,
     PeerDependency,
     ChildDependency,
-    None,
 }
 
 #[derive(Clone)]
 pub enum DepKey {
-    Name,
     Version,
     DepType,
     PjsonVersion,
@@ -24,47 +22,6 @@ pub enum DepKey {
 pub enum DepTuple {
     Main(DepKey),
     Diff(DepKey),
-}
-
-#[derive(Debug, Clone)]
-pub struct Dependency(pub Option<DepDetail>, pub Option<DepDetail>);
-
-impl Dependency {
-    pub fn get_record_str(self: &Self, dep_tuple: &DepTuple) -> &str {
-        let (dep_data, dep_key) = match dep_tuple {
-            DepTuple::Main(key) => {
-                let Dependency(data, _) = self;
-                (data, key)
-            }
-            DepTuple::Diff(key) => {
-                let Dependency(_, data) = self;
-                (data, key)
-            }
-        };
-
-        if let Some(detail) = dep_data {
-            match dep_key {
-                DepKey::Name => &detail.name,
-                DepKey::Version => &detail.version,
-                DepKey::DepType => match detail.dep_type {
-                    DepType::Dependency => "dep",
-                    DepType::DevDependency => "dev",
-                    DepType::PeerDependency => "peer",
-                    DepType::ChildDependency => "child",
-                    DepType::None => "",
-                },
-                DepKey::PjsonVersion => {
-                    if let Some(pjson_version) = &detail.pjson_version {
-                        pjson_version
-                    } else {
-                        ""
-                    }
-                }
-            }
-        } else {
-            ""
-        }
-    }
 }
 
 /// Holds the name and version values from the package.json files.

@@ -32,31 +32,26 @@ impl<'a> Schema<'a> {
                 app_details,
                 mode: Mode::DirectDepsList,
                 cols: vec![
-                    Col("Package", DepTuple::Main(DepKey::Name)),
                     Col("Type", DepTuple::Main(DepKey::DepType)),
                     Col("PJSON", DepTuple::Main(DepKey::PjsonVersion)),
                     Col("Version", DepTuple::Main(DepKey::Version)),
                 ],
                 diff: None,
                 message:
-                    "Packages which have resolved to a different version are highlighted in blue.",
+                    "\nDependencies which have resolved to a different version are highlighted in blue.",
             },
             Schematic::Plain(app_details) => Schema {
                 app_details,
                 mode: Mode::PlainList,
-                cols: vec![
-                    Col("Package", DepTuple::Main(DepKey::Name)),
-                    Col("Version", DepTuple::Main(DepKey::Version)),
-                ],
+                cols: vec![Col("Version", DepTuple::Main(DepKey::Version))],
                 diff: None,
                 message:
-                    "Direct dependencies (listed in the package.json) are highlighted in blue.",
+                    "\nDirect dependencies (listed in the package.json) are highlighted in blue.",
             },
             Schematic::Diff(app_details, diff_app_details) => Schema {
                 app_details,
                 mode: Mode::DiffList,
                 cols: vec![
-                    Col("Package", DepTuple::Main(DepKey::Name)),
                     Col("Type 1", DepTuple::Main(DepKey::DepType)),
                     Col("PJSON 1", DepTuple::Main(DepKey::PjsonVersion)),
                     Col("Version 1", DepTuple::Main(DepKey::Version)),
@@ -65,7 +60,7 @@ impl<'a> Schema<'a> {
                     Col("Version 2", DepTuple::Diff(DepKey::Version)),
                 ],
                 diff: Some(diff_app_details),
-                message: "Packages with different versions are highlighted in blue.",
+                message: "\nDependencies only found in the main app are highlighted in red.\nDependencies only found in the diff app are highlighted in green.\nDependencies found in both apps which are different versions are highlighted in blue.",
             },
         }
     }
