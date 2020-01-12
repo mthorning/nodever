@@ -15,14 +15,14 @@ pub enum Mode {
 }
 
 #[derive(Clone)]
-pub struct Col(pub &'static str, pub DepTuple);
+pub struct Col<'a>(pub &'a str, pub DepTuple);
 
 pub struct Schema<'a> {
     pub app_details: &'a AppDetail,
     pub mode: Mode,
-    pub cols: Vec<Col>,
+    pub cols: Vec<Col<'a>>,
     pub diff: Option<&'a AppDetail>,
-    pub message: &'static str,
+    pub message: &'a str,
 }
 
 impl<'a> Schema<'a> {
