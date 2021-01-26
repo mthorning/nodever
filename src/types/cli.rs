@@ -7,7 +7,7 @@ pub struct Cli {
     #[structopt(default_value = ".*")]
     pub filter: String,
 
-    /// The path to the root of the Nexcenter app.
+    /// The path to the package.json.
     #[structopt(long, parse(from_os_str), default_value = ".")]
     pub path: PathBuf,
 
