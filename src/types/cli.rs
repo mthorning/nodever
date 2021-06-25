@@ -7,18 +7,18 @@ pub struct Cli {
     #[structopt(default_value = ".*")]
     pub filter: String,
 
-    /// The path to the package.json.
+    /// The path to node_modules folder.
     #[structopt(long, parse(from_os_str), default_value = ".")]
     pub path: PathBuf,
 
-    /// Prevent alphabetically sorting of results.
-    #[structopt(long = "dont-sort", short = "x")]
-    pub dont_sort: bool,
-
     /// Show only direct dependencies.
     #[structopt(long = "direct-only", short = "d")]
-    pub direct_dep: bool,
+    pub direct_deps: bool,
 
     #[structopt(long)]
     pub diff: Option<PathBuf>,
+
+    /// Search in global dependencies
+    #[structopt(long, short = "g")]
+    pub global: bool,
 }

@@ -30,10 +30,7 @@ impl PjsonDetail {
         let mut path = PathBuf::from(base_path);
         path.push("package.json");
 
-        let pjson_string = match Self::get_pjson(&path) {
-            Ok(pjson_string) => pjson_string,
-            Err(_) => return Err(Error::new(ErrorKind::NotFound, "package.json not found.")),
-        };
+        let pjson_string = Self::get_pjson(&path)?;
         let pjson_details: PjsonDetail = serde_json::from_str(&pjson_string[..])?;
 
         Ok(pjson_details)

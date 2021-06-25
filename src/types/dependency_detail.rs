@@ -2,7 +2,7 @@ use crate::types::application_detail::AppDetail;
 use crate::types::pjson_detail::PjsonDetail;
 use std::collections::HashMap;
 use std::io::Error;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DepType {
@@ -35,10 +35,8 @@ pub struct DepDetail {
 
 impl DepDetail {
     /// Returns a new DepDetail type.
-    pub fn new(base_path: &Path, app_details: &AppDetail) -> Result<DepDetail, Error> {
-        let path = PathBuf::from(base_path);
-        let pjson_details = PjsonDetail::new(&path)?;
-        let PjsonDetail { name, version, .. } = pjson_details;
+    pub fn new(path: &PathBuf, app_details: &AppDetail) -> Result<DepDetail, Error> {
+        let PjsonDetail { name, version, .. } = PjsonDetail::new(path)?;
 
         // is a direct dependency?
         match Self::get_pjson_details(&name, &app_details.dependencies) {
@@ -78,11 +76,11 @@ impl DepDetail {
 
     fn get_pjson_details(
         dep_name: &str,
-        app_dependencies: &Option<HashMap<String, String>>,
+        app_dependencies: Option<HashMap<String, String>>,
     ) -> Option<String> {
         match app_dependencies {
             Some(deps) => match deps.get(dep_name) {
-                Some(pjson_version) => Some(pjson_version.to_owned()),
+                Some(pjson_version) => Some(pjson_version),
                 None => None,
             },
             None => None,

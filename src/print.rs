@@ -5,7 +5,7 @@ use regex::Regex;
 use std::io::{self, Error, Write};
 
 #[derive(Debug, Clone)]
-struct Dependency<'a>(pub &'a str, pub Option<DepDetail>, pub Option<DepDetail>);
+struct Dependency<'a>(pub &'a str, pub Option<&'a DepDetail>, pub Option<DepDetail>);
 
 impl<'a> Dependency<'a> {
     pub fn get_record_str(self: &Self, dep_tuple: &DepTuple) -> &str {

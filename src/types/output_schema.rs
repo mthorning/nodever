@@ -2,9 +2,9 @@ use crate::types::application_detail::AppDetail;
 use crate::types::dependency_detail::{DepKey, DepTuple};
 
 pub enum Schematic<'a> {
-    Plain(&'a AppDetail),
-    Direct(&'a AppDetail),
-    Diff(&'a AppDetail, &'a AppDetail),
+    Plain(&'a AppDetail<'a>),
+    Direct(&'a AppDetail<'a>),
+    Diff(&'a AppDetail<'a>, &'a AppDetail<'a>),
 }
 
 #[derive(PartialEq)]
@@ -18,7 +18,7 @@ pub enum Mode {
 pub struct Col<'a>(pub &'a str, pub DepTuple);
 
 pub struct Schema<'a> {
-    pub app_details: &'a AppDetail,
+    pub app_details: &'a AppDetail<'a>,
     pub mode: Mode,
     pub cols: Vec<Col<'a>>,
     pub diff: Option<&'a AppDetail>,
