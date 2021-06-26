@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{Error, ErrorKind, Read};
+use std::io::{Error, Read};
 use std::path::PathBuf;
 
 #[derive(Debug, Deserialize, Serialize)]

@@ -2,9 +2,12 @@ mod print;
 mod types;
 
 use exitfailure::ExitFailure;
+use std::default::Default;
+use std::io::Error;
 use structopt::StructOpt;
-use types::application_detail::{AppDetail, Args};
+// use types::application_detail::{AppDetail, Args};
 use types::dependency_detail::{StandardModule, NodeModule};
+use types::pjson_detail::PjsonDetail;
 use types::cli::Cli;
 // use types::output_schema::{Schema, Schematic};
 use std::path::PathBuf;
@@ -25,16 +28,12 @@ fn main() -> Result<(), ExitFailure> {
         true => get_global_path(),
         false => cli.path.clone(),
     };
-    let app_args = Args {
-        path,
-        filter: cli.filter,
-        global: cli.global,
-        direct_deps: cli.direct_deps,
-    };
-    let app_details: AppDetail<StandardModule> = AppDetail::new(app_args)?;
-    for dependency in *app_details.dependency_details {
-        dependency.print();
-    }
+    let mut base_path = PathBuf::from(path);
+    base_path.push("node_modules");
+
+    let app_pjson = PjsonDetail::new(&cli.path)?;
+    let _dependencies: Result<Vec<StandardModule>, Error> = collect_dependencies(&base_path, &app_pjson, &cli);
+
 
     // if let Some(diff_path) = cli.diff {
     //     let diff_app_args = Args {
@@ -57,3 +56,38 @@ fn main() -> Result<(), ExitFailure> {
 
     Ok(())
 }
+
+
+    fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf, pjson: &PjsonDetail, cli: &Cli) -> Result<Vec<T>, Error> {
+        let node_modules = base_path.read_dir()?;
+        // let name_filter = Regex::new(filter).unwrap();
+
+        let mut dependencies = Vec::new();
+        for entry in node_modules {
+            if let Ok(entry) = entry {
+                let folder_name = entry.file_name().into_string().unwrap();
+
+                if folder_name.starts_with('.') {
+                    continue;
+                }
+                // let mut dep_path = PathBuf::from(&base_path);
+                let mut dep_path = base_path.clone();
+                dep_path.push(&folder_name);
+
+                if folder_name.starts_with('@') {
+                    return collect_dependencies(base_path, pjson, cli);
+                } else {
+                    let mut detail: T = Default::default();
+                    detail.populate(base_path, pjson, cli)?;
+                    dependencies.push(detail)
+                            // if self.filter_by_name(&detail, &name_filter) && self.filter_by_flags(&detail) {
+                            //     self.dependency_details.push(detail);
+                            // }
+                    }
+            }
+        }
+
+        // self.dependency_details.sort_by(|a, b| a.get_comparison_field().cmp(&b.get_comparison_field()));
+
+        Ok(dependencies)
+    }
