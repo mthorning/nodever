@@ -4,6 +4,7 @@ mod types;
 use exitfailure::ExitFailure;
 use structopt::StructOpt;
 use types::application_detail::{AppDetail, Args};
+use types::dependency_detail::{StandardModule, NodeModule};
 use types::cli::Cli;
 // use types::output_schema::{Schema, Schematic};
 use std::path::PathBuf;
@@ -30,9 +31,9 @@ fn main() -> Result<(), ExitFailure> {
         global: cli.global,
         direct_deps: cli.direct_deps,
     };
-    let app_details = AppDetail::new(app_args)?;
-    for dependency in app_details.dependency_details {
-        dependency.print()
+    let app_details: AppDetail<StandardModule> = AppDetail::new(app_args)?;
+    for dependency in *app_details.dependency_details {
+        dependency.print();
     }
 
     // if let Some(diff_path) = cli.diff {

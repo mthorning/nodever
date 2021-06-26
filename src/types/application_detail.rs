@@ -1,4 +1,4 @@
-use crate::types::dependency_detail::{StandardDep, DepDetail};
+use crate::types::dependency_detail::{StandardModule, NodeModule};
 use crate::types::pjson_detail::PjsonDetail;
 use regex::Regex;
 use std::io::Error;
@@ -12,15 +12,15 @@ pub struct Args {
 }
 
 /// Holds the name and version values from the package.json files.
-pub struct AppDetail<T: DepDetail> {
+pub struct AppDetail<T: NodeModule> {
     pub pjson: Option<PjsonDetail>,
     pub dependency_details: Vec<T>,
     pub args: Args,
 }
 
-impl AppDetail {
+impl<T: NodeModule> AppDetail<T> {
     /// Returns a new AppDetail type.
-    pub fn new(args: Args) -> Result<AppDetail, Error> {
+    pub fn new(args: Args) -> Result<AppDetail<T>, Error> {
         let pjson_details = match args.global {
             true => None,
             false => Some(PjsonDetail::new(&args.path)?),
@@ -59,7 +59,7 @@ impl AppDetail {
                 if folder_name.starts_with('@') {
                     AppDetail::collect_dependencies(self, &dep_path)?;
                 } else {
-                    match StandardDep::new(&dep_path, self) {
+                    match StandardModule::new(&dep_path, &self.pjson.unwrap()) {
                         Ok(detail) => {
                             if self.filter_by_name(&detail, &name_filter) && self.filter_by_flags(&detail) {
                                 self.dependency_details.push(detail);
@@ -71,19 +71,19 @@ impl AppDetail {
             }
         }
 
-        self.dependency_details.sort_by(|a, b| a.name.cmp(&b.name));
+        self.dependency_details.sort_by(|a, b| a.get_comparison_field().cmp(&b.get_comparison_field()));
 
         Ok(())
     }
 
-    fn filter_by_name(&self, detail: &DepDetail, name_filter: &Regex) -> bool {
+    fn filter_by_name(&self, detail: &StandardModule, name_filter: &Regex) -> bool {
         name_filter.is_match(&detail.name)
     }
 
-    fn filter_by_flags(&self, detail: &DepDetail) -> bool {
+    fn filter_by_flags(&self, detail: &StandardModule) -> bool {
         let Args { direct_deps, .. } = self.args;
 
-        if direct_deps && detail.pjson_version.is_none() {
+        if direct_deps && detail.required_version.is_none() {
             return false;
         }
 

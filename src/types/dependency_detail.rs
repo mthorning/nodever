@@ -24,60 +24,68 @@ pub enum DepType {
 //     Diff(DepKey),
 // }
 
-pub trait DepDetail {
-    fn print(&self) -> String {
-       self.name 
-    }
+pub trait NodeModule {
+    fn get_comparison_field(&self) -> String;
+    fn print(&self) -> String;
 }
 
-/// Holds the name and version values from the package.json files.
-pub struct GlobalDep {
-    pub name: String,
-    pub version: String,
-}
+// pub struct GlobalModule {
+//     pub name: String,
+//     pub version: String,
+// }
+// 
+// impl NodeModule for GlobalModule {}
+// 
+// impl GlobalModule {
+//     pub fn new(path: &PathBuf, app_pjson: &PjsonDetail) -> Result<GlobalModule, Error> {
+//         let PjsonDetail { name, version, .. } = PjsonDetail::new(path)?;
+// 
+//         let new_dep_detail = GlobalModule {
+//             name,
+//             version,
+//         };
+// 
+//         Ok(new_dep_detail)
+//     }
+// }
 
-impl DepDetail for GlobalDep {}
-
-impl GlobalDep {
-    fn new(path: &PathBuf, app_details: &AppDetail) -> Result<GlobalDep, Error> {
-        let PjsonDetail { name, version, .. } = PjsonDetail::new(path)?;
-
-        let new_dep_detail = GlobalDep {
-            name,
-            version,
-        };
-
-        Ok(new_dep_detail)
-    }
-}
-
-pub struct StandardDep {
+pub struct StandardModule {
     pub name: String,
     pub version: String,
     pub dep_type: DepType,
+    pub required_version: Option<String>,
 }
 
-impl DepDetail for StandardDep {}
+impl NodeModule for StandardModule {
+    fn get_comparison_field(&self) -> String {
+       self.name 
+    }
+    fn print(&self) -> String {
+        self.name
+    }
+}
 
-impl StandardDep {
-    fn new(self, path: &PathBuf, app_details: &AppDetail) -> Result<StandardDep, Error> {
+impl StandardModule {
+    pub fn new(path: &PathBuf, app_pjson: &PjsonDetail) -> Result<Self, Error> {
         let PjsonDetail { name, version, .. } = PjsonDetail::new(path)?;
 
-        let new_dep_detail = StandardDep {
+        let new_dep_detail = StandardModule {
             name,
             version,
-            dep_type: self.get_dep_type(&name, app_details),
+            dep_type: StandardModule::get_dep_type(&name, app_pjson),
+            required_version: None,
         };
 
         Ok(new_dep_detail)
     }
-    fn get_dep_type(self, name: &str, app_details: &AppDetail) -> DepType {
-        match self.get_pjson_details(name, app_details.pjson.dependencies) {
+
+    fn get_dep_type(name: &str, app_pjson: &PjsonDetail) -> DepType {
+        match StandardModule::get_pjson_details(name, app_pjson.dependencies) {
             Some(required_version) => return DepType::Dependency(required_version),
-            None => match self.get_pjson_details(name, app_details.pjson.devDependencies) {
+            None => match StandardModule::get_pjson_details(name, app_pjson.dev_dependencies) {
                 Some(required_version) => return DepType::DevDependency(required_version),
-                None => match self.get_pjson_details(name, app_details.pjson.peerDependencies) {
-                    Some(required_version) => return DepType::peerDependency(required_version),
+                None => match StandardModule::get_pjson_details(name, app_pjson.peer_dependencies) {
+                    Some(required_version) => return DepType::PeerDependency(required_version),
                     None => DepType::ChildDependency
                 }
             }
@@ -90,7 +98,7 @@ impl StandardDep {
     ) -> Option<String> {
         match required_dependencies {
             Some(deps) => match deps.get(dep_name) {
-                Some(required_version) => Some(required_version),
+                Some(required_version) => Some(required_version.to_string()),
                 None => None,
             },
             None => None,
