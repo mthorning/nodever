@@ -5,7 +5,7 @@ use exitfailure::ExitFailure;
 use structopt::StructOpt;
 use types::application_detail::{AppDetail, Args};
 use types::cli::Cli;
-use types::output_schema::{Schema, Schematic};
+// use types::output_schema::{Schema, Schematic};
 use std::path::PathBuf;
 use which::which;
 
@@ -31,25 +31,28 @@ fn main() -> Result<(), ExitFailure> {
         direct_deps: cli.direct_deps,
     };
     let app_details = AppDetail::new(app_args)?;
+    for dependency in app_details.dependency_details {
+        dependency.print()
+    }
 
-    if let Some(diff_path) = cli.diff {
-        let diff_app_args = Args {
-            path: diff_path,
-            global: false,
-            filter: cli.filter,
-            direct_deps: cli.direct_deps,
-        };
-        let diff_app_details = AppDetail::new(diff_app_args)?;
-        print::print_details(Schema::new(Schematic::Diff(
-            &app_details,
-            &diff_app_details,
-        )))?;
-    } else {
-        match cli.direct_deps {
-            true => print::print_details(Schema::new(Schematic::Direct(&app_details)))?,
-            false => print::print_details(Schema::new(Schematic::Plain(&app_details)))?,
-        }
-    };
+    // if let Some(diff_path) = cli.diff {
+    //     let diff_app_args = Args {
+    //         path: diff_path,
+    //         global: false,
+    //         filter: cli.filter,
+    //         direct_deps: cli.direct_deps,
+    //     };
+    //     let diff_app_details = AppDetail::new(diff_app_args)?;
+    //     print::print_details(Schema::new(Schematic::Diff(
+    //         &app_details,
+    //         &diff_app_details,
+    //     )))?;
+    // } else {
+    //     match cli.direct_deps {
+    //         true => print::print_details(Schema::new(Schematic::Direct(&app_details)))?,
+    //         false => print::print_details(Schema::new(Schematic::Plain(&app_details)))?,
+    //     }
+    // };
 
     Ok(())
 }

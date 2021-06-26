@@ -1,4 +1,4 @@
-use crate::types::dependency_detail::DepDetail;
+use crate::types::dependency_detail::{StandardDep, DepDetail};
 use crate::types::pjson_detail::PjsonDetail;
 use regex::Regex;
 use std::io::Error;
@@ -12,9 +12,9 @@ pub struct Args {
 }
 
 /// Holds the name and version values from the package.json files.
-pub struct AppDetail {
+pub struct AppDetail<T: DepDetail> {
     pub pjson: Option<PjsonDetail>,
-    pub dependency_details: Vec<DepDetail>,
+    pub dependency_details: Vec<T>,
     pub args: Args,
 }
 
@@ -59,7 +59,7 @@ impl AppDetail {
                 if folder_name.starts_with('@') {
                     AppDetail::collect_dependencies(self, &dep_path)?;
                 } else {
-                    match DepDetail::new(&dep_path, self) {
+                    match StandardDep::new(&dep_path, self) {
                         Ok(detail) => {
                             if self.filter_by_name(&detail, &name_filter) && self.filter_by_flags(&detail) {
                                 self.dependency_details.push(detail);
