@@ -1,12 +1,15 @@
 mod print;
 mod types;
+mod traits;
+mod enums;
 
+use traits::NodeModule;
 use exitfailure::ExitFailure;
 use std::default::Default;
 use std::io::Error;
 use structopt::StructOpt;
 // use types::application_detail::{AppDetail, Args};
-use types::dependency_detail::{StandardModule, NodeModule};
+use types::dependency_detail::StandardModule;
 use types::pjson_detail::PjsonDetail;
 use types::cli::Cli;
 // use types::output_schema::{Schema, Schematic};
@@ -32,7 +35,12 @@ fn main() -> Result<(), ExitFailure> {
     base_path.push("node_modules");
 
     let app_pjson = PjsonDetail::new(&cli.path)?;
-    let _dependencies: Result<Vec<StandardModule>, Error> = collect_dependencies(&base_path, &app_pjson, &cli);
+    let mut dependencies: Vec<StandardModule> = Vec::new();
+    collect_dependencies(&base_path, &app_pjson, &cli, &mut dependencies)?;
+
+    for dependency in dependencies {
+        println!("{}", dependency.print());
+    }
 
 
     // if let Some(diff_path) = cli.diff {
@@ -58,11 +66,10 @@ fn main() -> Result<(), ExitFailure> {
 }
 
 
-    fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf, pjson: &PjsonDetail, cli: &Cli) -> Result<Vec<T>, Error> {
+    fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf, pjson: &PjsonDetail, cli: &Cli, dependencies: &mut Vec<T>) -> Result<(), Error> {
         let node_modules = base_path.read_dir()?;
         // let name_filter = Regex::new(filter).unwrap();
 
-        let mut dependencies = Vec::new();
         for entry in node_modules {
             if let Ok(entry) = entry {
                 let folder_name = entry.file_name().into_string().unwrap();
@@ -75,10 +82,10 @@ fn main() -> Result<(), ExitFailure> {
                 dep_path.push(&folder_name);
 
                 if folder_name.starts_with('@') {
-                    return collect_dependencies(base_path, pjson, cli);
+                    return collect_dependencies(&dep_path, pjson, cli, dependencies);
                 } else {
                     let mut detail: T = Default::default();
-                    detail.populate(base_path, pjson, cli)?;
+                    detail.populate(&dep_path, pjson, cli)?;
                     dependencies.push(detail)
                             // if self.filter_by_name(&detail, &name_filter) && self.filter_by_flags(&detail) {
                             //     self.dependency_details.push(detail);
@@ -89,5 +96,5 @@ fn main() -> Result<(), ExitFailure> {
 
         // self.dependency_details.sort_by(|a, b| a.get_comparison_field().cmp(&b.get_comparison_field()));
 
-        Ok(dependencies)
+        Ok(())
     }

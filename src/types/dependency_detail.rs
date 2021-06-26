@@ -1,17 +1,10 @@
-// use crate::types::application_detail::AppDetail;
 use crate::types::pjson_detail::PjsonDetail;
 use crate::types::cli::Cli;
+use crate::traits::NodeModule;
+use crate::enums::DepType;
 use std::collections::HashMap;
 use std::io::Error;
 use std::path::PathBuf;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum DepType {
-    Dependency(String),
-    DevDependency(String),
-    PeerDependency(String),
-    ChildDependency,
-}
 
 // #[derive(Clone)]
 // pub enum DepKey {
@@ -24,12 +17,6 @@ pub enum DepType {
 //     Main(DepKey),
 //     Diff(DepKey),
 // }
-
-pub trait NodeModule {
-    // fn get_comparison_field(&self) -> String;
-    fn print(&self) -> String;
-    fn populate(&mut self, base_path: &PathBuf, app_pjson: &PjsonDetail, cli: &Cli) -> Result<(), Error>;
-}
 
 // pub struct GlobalModule {
 //     pub name: String,
@@ -51,6 +38,7 @@ pub trait NodeModule {
 //     }
 // }
 
+#[derive(Debug)]
 pub struct StandardModule {
     pub name: String,
     pub version: String,
@@ -59,10 +47,11 @@ pub struct StandardModule {
 
 impl NodeModule for StandardModule {
     fn print(&self) -> String {
-        String::from("Hello")
+        format!("{} = {}", self.name, self.version)
     }
 
     fn populate(&mut self, path: &PathBuf, app_pjson: &PjsonDetail, _cli: &Cli) -> Result<(), Error> {
+
         let PjsonDetail { name, version, .. } = PjsonDetail::new(path)?;
 
         self.dep_type = get_dep_type(&name, app_pjson);
