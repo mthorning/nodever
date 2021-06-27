@@ -1,6 +1,8 @@
 use std::io::Error;
 use std::path::PathBuf;
+
 use regex::Regex;
+
 use crate::pjson_detail::PjsonDetail;
 use crate::cli::Cli;
 use crate::node_module::*;
@@ -13,10 +15,6 @@ pub struct GlobalModule {
 impl NodeModule for GlobalModule {
     fn filter_by_regex(&self, re: &Regex) -> bool {
         re.is_match(&self.name)
-    }
-
-    fn filter_by_args(&self, _cli: &Cli) -> bool {
-        true
     }
 
     fn print(&self) -> String {
@@ -41,6 +39,10 @@ impl NodeModule for GlobalModule {
 
     fn order(&self, to_compare: &GlobalModule) -> Ordering {
         self.name.cmp(&to_compare.name)
+    }
+
+    fn table_row(&self) -> Row {
+        row![self.name, self.version]
     }
 }
 

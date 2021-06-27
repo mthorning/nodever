@@ -1,3 +1,4 @@
+#[macro_use] extern crate prettytable;
 mod print;
 mod node_module;
 mod cli;
@@ -6,10 +7,12 @@ mod pjson_detail;
 use std::default::Default;
 use std::io::Error;
 use std::path::PathBuf;
+
 use which::which;
 use structopt::StructOpt;
 use exitfailure::ExitFailure;
 use regex::Regex;
+use prettytable::Table;
 
 use node_module::NodeModule;
 use node_module::standard_module::StandardModule;
@@ -39,13 +42,13 @@ fn main() -> Result<(), ExitFailure> {
         let base_path = get_node_modules_path(&get_global_path());
         let mut dependencies = Vec::<GlobalModule>::new();
         collect_dependencies(&base_path, &cli, &mut dependencies, None)?;
-        print_dependencies(dependencies);
+        print_table(dependencies);
     } else {
         let base_path = get_node_modules_path(&cli.path);
         let app_pjson = PjsonDetail::new(&cli.path)?;
         let mut dependencies = Vec::<StandardModule>::new();
         collect_dependencies(&base_path, &cli, &mut dependencies, Some(&app_pjson))?;
-        print_dependencies(dependencies);
+        print_table(dependencies);
     }
 
     // if let Some(diff_path) = cli.diff {
@@ -86,7 +89,7 @@ fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf,  cli: &Cli
             dep_path.push(&folder_name);
 
             if folder_name.starts_with('@') {
-                return collect_dependencies(&dep_path, cli, dependencies, app_pjson);
+                collect_dependencies(&dep_path, cli, dependencies, app_pjson)?;
             } else {
                 let mut detail: T = Default::default();
                 detail.populate(&dep_path, cli, app_pjson)?;
@@ -102,8 +105,16 @@ fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf,  cli: &Cli
     Ok(())
 }
 
+fn print_table<T: NodeModule>(dependencies: Vec<T>) {
+    let mut table = Table::new();
+    for dependency in dependencies {
+        table.add_row(dependency.table_row());
+    }
+    table.printstd();
+}
+
 fn print_dependencies<T: NodeModule>(dependencies: Vec<T>) {
     for dependency in dependencies {
-        println!("{}", dependency.print());
+        println!("{:?}", dependency.print());
     }
 }

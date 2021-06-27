@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::cmp::Ordering;
 
 use regex::Regex;
+use prettytable::{row, Row};
 use crate::pjson_detail::PjsonDetail;
 use crate::cli::Cli;
 
@@ -19,11 +20,27 @@ pub enum DepType {
 }
 
 pub trait NodeModule {
-    fn filter_by_regex(&self, re: &Regex) -> bool;
-    fn filter_by_args(&self, cli: &Cli) -> bool;
-    fn print(&self) -> String;
     fn populate(&mut self, base_path: &PathBuf, cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error>;
-    fn order(&self, to_compare: &Self) -> Ordering;
+
+    fn filter_by_regex(&self, _re: &Regex) -> bool {
+        true
+    }
+
+    fn print(&self) -> String {
+        String::new()
+    }
+
+    fn order(&self, _to_compare: &Self) -> Ordering {
+        Ordering::Equal
+    }
+    
+    fn filter_by_args(&self, _cli: &Cli) -> bool {
+        true
+    }
+
+    fn table_row(&self) -> Row {
+        row![]
+    }
 }
 
 
@@ -45,10 +62,14 @@ pub fn get_pjson_details(
     dep_name: &str,
     required_dependencies: &Option<HashMap<String, String>>,
 ) -> Option<String> {
+
     match required_dependencies {
-        Some(deps) => match deps.get(dep_name) {
-            Some(required_version) => Some(required_version.to_string()),
-            None => None,
+        Some(deps) => {
+            // println!("{}, {:?}\n\n\n", dep_name, deps);
+            match deps.get(dep_name) {
+                Some(required_version) => Some(required_version.to_string()),
+                None => None,
+            }
         },
         None => None,
     }
