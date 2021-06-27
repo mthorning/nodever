@@ -1,20 +1,21 @@
 mod print;
-mod types;
-mod traits;
-mod enums;
+mod node_module;
+mod cli;
+mod pjson_detail;
 
-use traits::NodeModule;
-use exitfailure::ExitFailure;
 use std::default::Default;
 use std::io::Error;
-use structopt::StructOpt;
-// use types::application_detail::{AppDetail, Args};
-use types::dependency_detail::StandardModule;
-use types::pjson_detail::PjsonDetail;
-use types::cli::Cli;
-// use types::output_schema::{Schema, Schematic};
 use std::path::PathBuf;
 use which::which;
+use structopt::StructOpt;
+use exitfailure::ExitFailure;
+use regex::Regex;
+
+use node_module::NodeModule;
+use node_module::standard_module::StandardModule;
+use pjson_detail::PjsonDetail;
+use cli::Cli;
+// use types::output_schema::{Schema, Schematic};
 
 fn get_global_path() -> PathBuf {
     let mut node_path = which("node").unwrap();
@@ -66,35 +67,34 @@ fn main() -> Result<(), ExitFailure> {
 }
 
 
-    fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf, pjson: &PjsonDetail, cli: &Cli, dependencies: &mut Vec<T>) -> Result<(), Error> {
-        let node_modules = base_path.read_dir()?;
-        // let name_filter = Regex::new(filter).unwrap();
+fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf, pjson: &PjsonDetail, cli: &Cli, dependencies: &mut Vec<T>) -> Result<(), Error> {
+    let node_modules = base_path.read_dir()?;
 
-        for entry in node_modules {
-            if let Ok(entry) = entry {
-                let folder_name = entry.file_name().into_string().unwrap();
+    let filter_re = Regex::new(&cli.filter).unwrap();
 
-                if folder_name.starts_with('.') {
-                    continue;
-                }
-                // let mut dep_path = PathBuf::from(&base_path);
-                let mut dep_path = base_path.clone();
-                dep_path.push(&folder_name);
+    for entry in node_modules {
+        if let Ok(entry) = entry {
+            let folder_name = entry.file_name().into_string().unwrap();
 
-                if folder_name.starts_with('@') {
-                    return collect_dependencies(&dep_path, pjson, cli, dependencies);
-                } else {
-                    let mut detail: T = Default::default();
-                    detail.populate(&dep_path, pjson, cli)?;
+            if folder_name.starts_with('.') {
+                continue;
+            }
+            let mut dep_path = base_path.clone();
+            dep_path.push(&folder_name);
+
+            if folder_name.starts_with('@') {
+                return collect_dependencies(&dep_path, pjson, cli, dependencies);
+            } else {
+                let mut detail: T = Default::default();
+                detail.populate(&dep_path, pjson, cli)?;
+                if detail.filter_by_regex(&filter_re) && detail.filter_by_args(&cli) {
                     dependencies.push(detail)
-                            // if self.filter_by_name(&detail, &name_filter) && self.filter_by_flags(&detail) {
-                            //     self.dependency_details.push(detail);
-                            // }
-                    }
+                }
             }
         }
-
-        // self.dependency_details.sort_by(|a, b| a.get_comparison_field().cmp(&b.get_comparison_field()));
-
-        Ok(())
     }
+
+    // self.dependency_details.sort_by(|a, b| a.get_comparison_field().cmp(&b.get_comparison_field()));
+
+    Ok(())
+}
