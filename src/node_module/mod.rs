@@ -1,5 +1,6 @@
 pub mod standard_module;
 pub mod global_module;
+pub mod diff_module;
 
 use std::collections::HashMap;
 use std::io::Error;
@@ -19,15 +20,25 @@ pub enum DepType {
     ChildDependency,
 }
 
+pub enum RowType<'a> {
+    Standard,
+    DiffLeft,
+    DiffRight(&'a str),
+}
+
 pub trait NodeModule {
     fn populate(&mut self, base_path: &PathBuf, cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error>;
 
-    fn filter_by_regex(&self, _re: &Regex) -> bool {
-        true
+    fn get_name(&self) -> &str {
+        ""
     }
 
-    fn print(&self) -> String {
-        String::new()
+    fn get_version(&self) -> &str {
+        ""
+    }
+
+    fn filter_by_regex(&self, _re: &Regex) -> bool {
+        true
     }
 
     fn order(&self, _to_compare: &Self) -> Ordering {
@@ -38,7 +49,7 @@ pub trait NodeModule {
         true
     }
 
-    fn table_row(&self) -> Row {
+    fn table_row(&self, _row_type: RowType) -> Row {
         row![]
     }
 }

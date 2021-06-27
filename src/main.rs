@@ -1,12 +1,12 @@
 #[macro_use] extern crate prettytable;
-mod print;
 mod node_module;
 mod cli;
 mod pjson_detail;
 
 use std::default::Default;
-use std::io::Error;
+use std::io::{self, Error, Write};
 use std::path::PathBuf;
+use std::cmp::Ordering;
 
 use which::which;
 use structopt::StructOpt;
@@ -14,12 +14,50 @@ use exitfailure::ExitFailure;
 use regex::Regex;
 use prettytable::Table;
 
-use node_module::NodeModule;
+use node_module::{NodeModule, RowType};
 use node_module::standard_module::StandardModule;
 use node_module::global_module::GlobalModule;
+use node_module::diff_module::DiffModule;
 use pjson_detail::PjsonDetail;
 use cli::Cli;
 // use types::output_schema::{Schema, Schematic};
+
+fn main() -> Result<(), ExitFailure> {
+    let cli = Cli::from_args();
+
+    if cli.global {
+        let base_path = get_node_modules_path(&get_global_path());
+        let mut dependencies = Vec::<GlobalModule>::new();
+        collect_dependencies(&base_path, &cli, &mut dependencies, None)?;
+        print_table(&dependencies);
+    } else {
+        let base_path = get_node_modules_path(&cli.path);
+        let app_pjson = PjsonDetail::new(&cli.path)?;
+        
+        if let Some(path) = &cli.diff {
+            let mut dependencies = Vec::<DiffModule>::new();
+            collect_dependencies(&base_path, &cli, &mut dependencies, Some(&app_pjson))?;
+
+            let diff_path = get_node_modules_path(&path);
+            let diff_pjson = PjsonDetail::new(&path)?;
+            let mut diff_dependencies = Vec::<DiffModule>::new();
+            collect_dependencies(&diff_path, &cli, &mut diff_dependencies, Some(&diff_pjson))?;
+            print_diff_table(&dependencies, &diff_dependencies);
+        } else {
+            let mut dependencies = Vec::<StandardModule>::new();
+            collect_dependencies(&base_path, &cli, &mut dependencies, Some(&app_pjson))?;
+            print_table(&dependencies);
+            print_completion_message(format!(
+                "\n{} matches found in version {} of {}.\n",
+                dependencies.len(),
+                app_pjson.version,
+                app_pjson.name,
+            ))?;
+        }
+    }
+
+    Ok(())
+}
 
 fn get_global_path() -> PathBuf {
     let mut node_path = which("node").unwrap();
@@ -35,43 +73,6 @@ fn get_node_modules_path(path: &PathBuf) -> PathBuf {
         base_path
 }
 
-fn main() -> Result<(), ExitFailure> {
-    let cli = Cli::from_args();
-
-    if cli.global {
-        let base_path = get_node_modules_path(&get_global_path());
-        let mut dependencies = Vec::<GlobalModule>::new();
-        collect_dependencies(&base_path, &cli, &mut dependencies, None)?;
-        print_table(dependencies);
-    } else {
-        let base_path = get_node_modules_path(&cli.path);
-        let app_pjson = PjsonDetail::new(&cli.path)?;
-        let mut dependencies = Vec::<StandardModule>::new();
-        collect_dependencies(&base_path, &cli, &mut dependencies, Some(&app_pjson))?;
-        print_table(dependencies);
-    }
-
-    // if let Some(diff_path) = cli.diff {
-    //     let diff_app_args = Args {
-    //         path: diff_path,
-    //         global: false,
-    //         filter: cli.filter,
-    //         direct_deps: cli.direct_deps,
-    //     };
-    //     let diff_app_details = AppDetail::new(diff_app_args)?;
-    //     print::print_details(Schema::new(Schematic::Diff(
-    //         &app_details,
-    //         &diff_app_details,
-    //     )))?;
-    // } else {
-    //     match cli.direct_deps {
-    //         true => print::print_details(Schema::new(Schematic::Direct(&app_details)))?,
-    //         false => print::print_details(Schema::new(Schematic::Plain(&app_details)))?,
-    //     }
-    // };
-
-    Ok(())
-}
 
 fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf,  cli: &Cli, dependencies: &mut Vec<T>, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
     let node_modules = base_path.read_dir()?;
@@ -105,16 +106,40 @@ fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf,  cli: &Cli
     Ok(())
 }
 
-fn print_table<T: NodeModule>(dependencies: Vec<T>) {
+fn print_table<T: NodeModule>(dependencies: &Vec<T>) {
     let mut table = Table::new();
     for dependency in dependencies {
-        table.add_row(dependency.table_row());
+        table.add_row(dependency.table_row(RowType::Standard));
     }
     table.printstd();
 }
 
-fn print_dependencies<T: NodeModule>(dependencies: Vec<T>) {
+fn print_diff_table<T: NodeModule, U: NodeModule>(dependencies: &Vec<T>, diff_dependencies: &Vec<U>) {
+    let mut table = Table::new();
     for dependency in dependencies {
-        println!("{:?}", dependency.print());
+        let mut row = dependency.table_row(RowType::DiffLeft);
+
+        for diff_dependency in diff_dependencies {
+            match dependency.get_name().cmp(&diff_dependency.get_name()) {
+                Ordering::Equal => {
+                    let diff_row = diff_dependency.table_row(RowType::DiffRight(dependency.get_version()));
+                    for cell in diff_row.iter() {
+                        row.add_cell(cell.to_owned())
+                    }
+                    break;
+                }
+                Ordering::Less => break,
+                Ordering::Greater => (),
+            }
+        }
+        table.add_row(row);
     }
+    table.printstd();
+}
+
+fn print_completion_message(message: String) -> Result<(), Error> {
+    let stdout = io::stdout();
+    let mut handle = stdout.lock();
+    handle.write_all(message.as_bytes())?;
+    Ok(())
 }

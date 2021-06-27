@@ -9,13 +9,13 @@ use crate::cli::Cli;
 use crate::node_module::*;
 
 #[derive(Debug)]
-pub struct StandardModule {
+pub struct DiffModule {
     pub name: String,
     pub version: String,
     pub dep_type: DepType,
 }
 
-impl NodeModule for StandardModule {
+impl NodeModule for DiffModule {
     fn populate(&mut self, path: &PathBuf, _cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
 
         let PjsonDetail { name, version, .. } = PjsonDetail::new(path)?;
@@ -28,6 +28,14 @@ impl NodeModule for StandardModule {
         Ok(())
     }
 
+    fn get_name(&self) -> &str {
+       &self.name 
+    }
+
+    fn get_version(&self) -> &str {
+       &self.version 
+    }
+    
     fn filter_by_regex(&self, re: &Regex) -> bool {
         re.is_match(&self.name)
     }
@@ -39,24 +47,29 @@ impl NodeModule for StandardModule {
         true
     }
 
-    fn order(&self, to_compare: &StandardModule) -> Ordering {
+    fn order(&self, to_compare: &DiffModule) -> Ordering {
         self.name.cmp(&to_compare.name)
     }
 
-    fn table_row(&self, _row_type: RowType) -> Row {
-        match self.dep_type {
-            DepType::ChildDependency => row![self.name, self.version],
-            DepType::Dependency(_) => row![Fg => self.name, self.version, "d"],
-            DepType::DevDependency(_) => row![Fb => self.name, self.version, "dd"],
-            DepType::PeerDependency(_) => row![Fm => self.name, self.version, "pd"],
+    fn table_row(&self, row_type: RowType) -> Row {
+        match row_type {
+            RowType::DiffLeft => row![self.name, self.version],
+            RowType::DiffRight(left_version) => {
+                if left_version == self.version {
+                    return row![self.version]
+                } else {
+                    return row![Fr => self.version]
+                }
+            },
+            _ => row![],
         }
    }
 
 }
 
-impl Default for StandardModule {
+impl Default for DiffModule {
     fn default() -> Self {
-        StandardModule {
+        DiffModule {
             name: String::new(),
             version: String::new(),
             dep_type: DepType::ChildDependency, 

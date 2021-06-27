@@ -17,10 +17,6 @@ impl NodeModule for GlobalModule {
         re.is_match(&self.name)
     }
 
-    fn print(&self) -> String {
-        format!("{} = {}", self.name, self.version)
-    }
-
     fn populate(&mut self, path: &PathBuf, _cli: &Cli, _app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
 
         let PjsonDetail { name, version, .. } = match PjsonDetail::new(path) {
@@ -41,7 +37,7 @@ impl NodeModule for GlobalModule {
         self.name.cmp(&to_compare.name)
     }
 
-    fn table_row(&self) -> Row {
+    fn table_row(&self, _row_type: RowType) -> Row {
         row![self.name, self.version]
     }
 }
