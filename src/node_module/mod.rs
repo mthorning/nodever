@@ -1,8 +1,11 @@
 pub mod standard_module;
+pub mod global_module;
 
 use std::collections::HashMap;
 use std::io::Error;
 use std::path::PathBuf;
+use std::cmp::Ordering;
+
 use regex::Regex;
 use crate::pjson_detail::PjsonDetail;
 use crate::cli::Cli;
@@ -19,7 +22,8 @@ pub trait NodeModule {
     fn filter_by_regex(&self, re: &Regex) -> bool;
     fn filter_by_args(&self, cli: &Cli) -> bool;
     fn print(&self) -> String;
-    fn populate(&mut self, base_path: &PathBuf, app_pjson: &PjsonDetail, cli: &Cli) -> Result<(), Error>;
+    fn populate(&mut self, base_path: &PathBuf, cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error>;
+    fn order(&self, to_compare: &Self) -> Ordering;
 }
 
 

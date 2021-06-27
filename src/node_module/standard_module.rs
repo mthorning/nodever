@@ -1,11 +1,12 @@
 use std::io::Error;
 use std::path::PathBuf;
+use std::cmp::Ordering;
+
 use regex::Regex;
 use crate::pjson_detail::PjsonDetail;
 use crate::cli::Cli;
 use crate::node_module::*;
 
-#[derive(Debug)]
 pub struct StandardModule {
     pub name: String,
     pub version: String,
@@ -28,16 +29,20 @@ impl NodeModule for StandardModule {
         format!("{} = {}", self.name, self.version)
     }
 
-    fn populate(&mut self, path: &PathBuf, app_pjson: &PjsonDetail, _cli: &Cli) -> Result<(), Error> {
+    fn populate(&mut self, path: &PathBuf, _cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
 
         let PjsonDetail { name, version, .. } = PjsonDetail::new(path)?;
 
-        self.dep_type = get_dep_type(&name, app_pjson);
+        self.dep_type = get_dep_type(&name, app_pjson.unwrap());
 
         self.name = name;
         self.version = version;
 
         Ok(())
+    }
+
+    fn order(&self, to_compare: &StandardModule) -> Ordering {
+        self.name.cmp(&to_compare.name)
     }
 }
 
