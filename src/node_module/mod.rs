@@ -8,7 +8,8 @@ use std::path::PathBuf;
 use std::cmp::Ordering;
 
 use regex::Regex;
-use prettytable::{row, Row};
+use prettytable::{row, Row, Cell};
+
 use crate::pjson_detail::PjsonDetail;
 use crate::cli::Cli;
 
@@ -28,14 +29,6 @@ pub enum RowType<'a> {
 
 pub trait NodeModule {
     fn populate(&mut self, base_path: &PathBuf, cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error>;
-
-    fn get_name(&self) -> &str {
-        ""
-    }
-
-    fn get_version(&self) -> &str {
-        ""
-    }
 
     fn filter_by_regex(&self, _re: &Regex) -> bool {
         true
@@ -84,4 +77,32 @@ pub fn get_pjson_details(
         },
         None => None,
     }
+}
+
+pub fn get_name_cell(name: &str, dep_type: &DepType) -> Cell {
+        let cell = Cell::new(name);
+        match dep_type {
+            DepType::ChildDependency => cell,
+            DepType::Dependency(_) => cell.style_spec("Fb"),
+            DepType::DevDependency(_) => cell.style_spec("Fm"),
+            DepType::PeerDependency(_) => cell.style_spec("Fc"),
+        }
+}
+
+pub fn standard_filter(dep_type: &DepType, cli: &Cli) -> bool {
+        match dep_type {
+            DepType::ChildDependency => {
+                if cli.dev || cli.peer || cli.dep || cli.direct_deps { return false; }
+            }
+            DepType::Dependency(_) => {
+                if cli.dev || cli.peer { return false; }
+            }
+            DepType::DevDependency(_) => {
+                if cli.dep || cli.peer { return false; }
+            }
+            DepType::PeerDependency(_) => {
+                if cli.dev || cli.dep { return false; }
+            }
+        }
+        true
 }

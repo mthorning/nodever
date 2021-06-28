@@ -17,7 +17,6 @@ pub struct DiffModule {
 
 impl NodeModule for DiffModule {
     fn populate(&mut self, path: &PathBuf, _cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
-
         let PjsonDetail { name, version, .. } = PjsonDetail::new(path)?;
 
         self.dep_type = get_dep_type(&name, app_pjson.unwrap());
@@ -28,23 +27,12 @@ impl NodeModule for DiffModule {
         Ok(())
     }
 
-    fn get_name(&self) -> &str {
-       &self.name 
-    }
-
-    fn get_version(&self) -> &str {
-       &self.version 
-    }
-    
     fn filter_by_regex(&self, re: &Regex) -> bool {
         re.is_match(&self.name)
     }
 
     fn filter_by_args(&self, cli: &Cli) -> bool {
-       if cli.direct_deps && self.dep_type == DepType::ChildDependency {
-           return false
-        } 
-        true
+        standard_filter(&self.dep_type, &cli)
     }
 
     fn order(&self, to_compare: &DiffModule) -> Ordering {
@@ -52,8 +40,9 @@ impl NodeModule for DiffModule {
     }
 
     fn table_row(&self, row_type: RowType) -> Row {
+        let name_cell = get_name_cell(&self.name, &self.dep_type);
         match row_type {
-            RowType::DiffLeft => row![self.name, self.version],
+            RowType::DiffLeft => Row::new(vec![name_cell, Cell::new(&self.version)]),
             RowType::DiffRight(left_version) => {
                 if left_version == self.version {
                     return row![self.version]

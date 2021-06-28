@@ -114,15 +114,15 @@ fn print_table<T: NodeModule>(dependencies: &Vec<T>) {
     table.printstd();
 }
 
-fn print_diff_table<T: NodeModule, U: NodeModule>(dependencies: &Vec<T>, diff_dependencies: &Vec<U>) {
+fn print_diff_table(dependencies: &Vec<DiffModule>, diff_dependencies: &Vec<DiffModule>) {
     let mut table = Table::new();
     for dependency in dependencies {
         let mut row = dependency.table_row(RowType::DiffLeft);
 
         for diff_dependency in diff_dependencies {
-            match dependency.get_name().cmp(&diff_dependency.get_name()) {
+            match dependency.name.cmp(&diff_dependency.name) {
                 Ordering::Equal => {
-                    let diff_row = diff_dependency.table_row(RowType::DiffRight(dependency.get_version()));
+                    let diff_row = diff_dependency.table_row(RowType::DiffRight(&dependency.version));
                     for cell in diff_row.iter() {
                         row.add_cell(cell.to_owned())
                     }

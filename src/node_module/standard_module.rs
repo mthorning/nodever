@@ -33,10 +33,7 @@ impl NodeModule for StandardModule {
     }
 
     fn filter_by_args(&self, cli: &Cli) -> bool {
-       if cli.direct_deps && self.dep_type == DepType::ChildDependency {
-           return false
-        } 
-        true
+        standard_filter(&self.dep_type, &cli)
     }
 
     fn order(&self, to_compare: &StandardModule) -> Ordering {
@@ -44,12 +41,10 @@ impl NodeModule for StandardModule {
     }
 
     fn table_row(&self, _row_type: RowType) -> Row {
-        match self.dep_type {
-            DepType::ChildDependency => row![self.name, self.version],
-            DepType::Dependency(_) => row![Fg => self.name, self.version, "d"],
-            DepType::DevDependency(_) => row![Fb => self.name, self.version, "dd"],
-            DepType::PeerDependency(_) => row![Fm => self.name, self.version, "pd"],
-        }
+        Row::new(vec![
+            get_name_cell(&self.name, &self.dep_type),
+            Cell::new(&self.version),
+        ])
    }
 
 }
