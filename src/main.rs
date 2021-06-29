@@ -14,10 +14,10 @@ use exitfailure::ExitFailure;
 use regex::Regex;
 use prettytable::Table;
 
-use node_module::{NodeModule, RowType};
+use node_module::{NodeModule, PrintTable, RowType};
 use node_module::standard_module::StandardModule;
 use node_module::global_module::GlobalModule;
-use node_module::diff_module::DiffModule;
+use node_module::diff_module::{DiffModule, DiffedPair};
 use pjson_detail::PjsonDetail;
 use cli::Cli;
 // use types::output_schema::{Schema, Schematic};
@@ -32,21 +32,21 @@ fn main() -> Result<(), ExitFailure> {
         print_table(&dependencies);
     } else {
         let base_path = get_node_modules_path(&cli.path);
-        let app_pjson = PjsonDetail::new(&cli.path)?;
+        let app_pjson = PjsonDetail::from(&cli.path)?;
         
         if let Some(path) = &cli.diff {
             let mut dependencies = Vec::<DiffModule>::new();
             collect_dependencies(&base_path, &cli, &mut dependencies, Some(&app_pjson))?;
 
             let diff_path = get_node_modules_path(&path);
-            let diff_pjson = PjsonDetail::new(&path)?;
+            let diff_pjson = PjsonDetail::from(&path)?;
             let mut diff_dependencies = Vec::<DiffModule>::new();
             collect_dependencies(&diff_path, &cli, &mut diff_dependencies, Some(&diff_pjson))?;
-            print_diff_table(&dependencies, &diff_dependencies);
+            let diffed_pairs = DiffedPair::get_pairs(dependencies, diff_dependencies);
+            print_table(&diffed_pairs);
         } else {
             let mut dependencies = Vec::<StandardModule>::new();
             collect_dependencies(&base_path, &cli, &mut dependencies, Some(&app_pjson))?;
-            print_table(&dependencies);
             print_completion_message(format!(
                 "\n{} matches found in version {} of {}.\n",
                 dependencies.len(),
@@ -106,33 +106,10 @@ fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf,  cli: &Cli
     Ok(())
 }
 
-fn print_table<T: NodeModule>(dependencies: &Vec<T>) {
+fn print_table<T: PrintTable>(dependencies: &Vec<T>) {
     let mut table = Table::new();
     for dependency in dependencies {
         table.add_row(dependency.table_row(RowType::Standard));
-    }
-    table.printstd();
-}
-
-fn print_diff_table(dependencies: &Vec<DiffModule>, diff_dependencies: &Vec<DiffModule>) {
-    let mut table = Table::new();
-    for dependency in dependencies {
-        let mut row = dependency.table_row(RowType::DiffLeft);
-
-        for diff_dependency in diff_dependencies {
-            match dependency.name.cmp(&diff_dependency.name) {
-                Ordering::Equal => {
-                    let diff_row = diff_dependency.table_row(RowType::DiffRight(&dependency.version));
-                    for cell in diff_row.iter() {
-                        row.add_cell(cell.to_owned())
-                    }
-                    break;
-                }
-                Ordering::Less => break,
-                Ordering::Greater => (),
-            }
-        }
-        table.add_row(row);
     }
     table.printstd();
 }

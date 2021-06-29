@@ -18,19 +18,11 @@ pub struct Cli {
     #[structopt(long, short = "g")]
     pub global: bool,
 
-    /// Show only direct dependencies.
-    #[structopt(long = "direct-only", short = "d")]
-    pub direct_deps: bool,
-
-    /// Show only dependencies.
-    #[structopt(long)]
+    /// Show dependencies.
+    #[structopt(short = "D" )] 
     pub dep: bool,
 
-    /// Show only devDependencies.
-    #[structopt(long)]
+    /// Show devDependencies.
+    #[structopt(short = "d")]
     pub dev: bool,
-
-    /// Show only peerDependencies.
-    #[structopt(long)]
-    pub peer: bool,
 }

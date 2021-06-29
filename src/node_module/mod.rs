@@ -17,14 +17,12 @@ use crate::cli::Cli;
 pub enum DepType {
     Dependency(String),
     DevDependency(String),
-    PeerDependency(String),
     ChildDependency,
 }
 
-pub enum RowType<'a> {
+//FIXME: remove this enum
+pub enum RowType {
     Standard,
-    DiffLeft,
-    DiffRight(&'a str),
 }
 
 pub trait NodeModule {
@@ -41,7 +39,9 @@ pub trait NodeModule {
     fn filter_by_args(&self, _cli: &Cli) -> bool {
         true
     }
+}
 
+pub trait PrintTable {
     fn table_row(&self, _row_type: RowType) -> Row {
         row![]
     }
@@ -54,10 +54,7 @@ pub fn get_dep_type(name: &str, app_pjson: &PjsonDetail) -> DepType {
         Some(required_version) => return DepType::Dependency(required_version),
         None => match get_pjson_details(name, &app_pjson.dev_dependencies) {
             Some(required_version) => return DepType::DevDependency(required_version),
-            None => match get_pjson_details(name, &app_pjson.peer_dependencies) {
-                Some(required_version) => return DepType::PeerDependency(required_version),
-                None => DepType::ChildDependency
-            }
+            None => DepType::ChildDependency
         }
     }
 }
@@ -85,23 +82,19 @@ pub fn get_name_cell(name: &str, dep_type: &DepType) -> Cell {
             DepType::ChildDependency => cell,
             DepType::Dependency(_) => cell.style_spec("Fb"),
             DepType::DevDependency(_) => cell.style_spec("Fm"),
-            DepType::PeerDependency(_) => cell.style_spec("Fc"),
         }
 }
 
 pub fn standard_filter(dep_type: &DepType, cli: &Cli) -> bool {
         match dep_type {
             DepType::ChildDependency => {
-                if cli.dev || cli.peer || cli.dep || cli.direct_deps { return false; }
+                if cli.dev ||  cli.dep { return false; }
             }
             DepType::Dependency(_) => {
-                if cli.dev || cli.peer { return false; }
+                if cli.dev && !cli.dep { return false; }
             }
             DepType::DevDependency(_) => {
-                if cli.dep || cli.peer { return false; }
-            }
-            DepType::PeerDependency(_) => {
-                if cli.dev || cli.dep { return false; }
+                if cli.dep && ! cli.dev { return false; }
             }
         }
         true

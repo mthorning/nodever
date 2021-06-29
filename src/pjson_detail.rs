@@ -26,7 +26,7 @@ fn default_to_none() -> Option<HashMap<String, String>> {
 
 impl PjsonDetail {
     /// Returns the PjsonDetail type.
-    pub fn new(base_path: &PathBuf) -> Result<PjsonDetail, Error> {
+    pub fn from(base_path: &PathBuf) -> Result<PjsonDetail, Error> {
         let mut path = PathBuf::from(base_path);
         path.push("package.json");
 

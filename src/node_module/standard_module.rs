@@ -18,7 +18,7 @@ pub struct StandardModule {
 impl NodeModule for StandardModule {
     fn populate(&mut self, path: &PathBuf, _cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
 
-        let PjsonDetail { name, version, .. } = PjsonDetail::new(path)?;
+        let PjsonDetail { name, version, .. } = PjsonDetail::from(path)?;
 
         self.dep_type = get_dep_type(&name, app_pjson.unwrap());
 
@@ -39,7 +39,9 @@ impl NodeModule for StandardModule {
     fn order(&self, to_compare: &StandardModule) -> Ordering {
         self.name.cmp(&to_compare.name)
     }
+}
 
+impl PrintTable for StandardModule {
     fn table_row(&self, _row_type: RowType) -> Row {
         Row::new(vec![
             get_name_cell(&self.name, &self.dep_type),

@@ -15,9 +15,67 @@ pub struct DiffModule {
     pub dep_type: DepType,
 }
 
+pub struct DiffedPair {
+    pub name: String,
+    pub version_one: String,
+    pub version_two: String,
+    pub dep_type: DepType,
+}
+
+impl DiffedPair {
+    pub fn get_pairs(dependencies: Vec<DiffModule>, mut diff_dependencies: Vec<DiffModule>) -> Vec<Self> {
+        let mut diffed_pairs = Vec::new();
+
+        for dependency in dependencies {
+            let mut version_two = String::new();
+            for (i, diff_dependency) in diff_dependencies.iter().enumerate() {
+                match dependency.name.cmp(&diff_dependency.name) {
+                    Ordering::Equal => {
+                        version_two = diff_dependency.version.clone();
+                        diff_dependencies.remove(i);
+                        break;
+                    }
+                    Ordering::Less => break,
+                    Ordering::Greater => (),
+                }
+            }
+            let new_pair = DiffedPair{ 
+                name: dependency.name, 
+                dep_type: dependency.dep_type, 
+                version_one: dependency.version,
+                version_two,
+            };
+            diffed_pairs.push(new_pair);
+        }
+
+        //Add left over diff_dependencies
+        for diff_dependency in diff_dependencies {
+            diffed_pairs.push(DiffedPair{ 
+                name: diff_dependency.name, 
+                dep_type: diff_dependency.dep_type, 
+                version_one: String::new(), 
+                version_two: diff_dependency.version 
+            });
+        }
+
+        diffed_pairs.sort_by(|a, b| a.name.cmp(&b.name));
+        diffed_pairs
+    }
+}
+
+impl PrintTable for DiffedPair {
+    fn table_row(&self, _row_type: RowType) -> Row {
+        Row::new(vec![
+            get_name_cell(&self.name, &self.dep_type),
+            Cell::new(&self.version_one),
+            Cell::new(&self.version_two),
+        ])
+   }
+}
+
 impl NodeModule for DiffModule {
     fn populate(&mut self, path: &PathBuf, _cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
-        let PjsonDetail { name, version, .. } = PjsonDetail::new(path)?;
+        let PjsonDetail { name, version, .. } = PjsonDetail::from(path)?;
 
         self.dep_type = get_dep_type(&name, app_pjson.unwrap());
 
@@ -38,21 +96,6 @@ impl NodeModule for DiffModule {
     fn order(&self, to_compare: &DiffModule) -> Ordering {
         self.name.cmp(&to_compare.name)
     }
-
-    fn table_row(&self, row_type: RowType) -> Row {
-        let name_cell = get_name_cell(&self.name, &self.dep_type);
-        match row_type {
-            RowType::DiffLeft => Row::new(vec![name_cell, Cell::new(&self.version)]),
-            RowType::DiffRight(left_version) => {
-                if left_version == self.version {
-                    return row![self.version]
-                } else {
-                    return row![Fr => self.version]
-                }
-            },
-            _ => row![],
-        }
-   }
 
 }
 

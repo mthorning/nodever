@@ -19,7 +19,7 @@ impl NodeModule for GlobalModule {
 
     fn populate(&mut self, path: &PathBuf, _cli: &Cli, _app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
 
-        let PjsonDetail { name, version, .. } = match PjsonDetail::new(path) {
+        let PjsonDetail { name, version, .. } = match PjsonDetail::from(path) {
             Ok(pjson_details) => pjson_details,
             Err(err) => {
                 println!("Failed to find a package.json in {:?}", path);
@@ -36,7 +36,9 @@ impl NodeModule for GlobalModule {
     fn order(&self, to_compare: &GlobalModule) -> Ordering {
         self.name.cmp(&to_compare.name)
     }
+}
 
+impl PrintTable for GlobalModule {
     fn table_row(&self, _row_type: RowType) -> Row {
         row![self.name, self.version]
     }
