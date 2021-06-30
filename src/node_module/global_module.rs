@@ -39,7 +39,7 @@ impl NodeModule for GlobalModule {
 }
 
 impl PrintTable for GlobalModule {
-    fn table_row(&self, _row_type: RowType) -> Row {
+    fn table_row(&self) -> Row {
         row![self.name, self.version]
     }
 }

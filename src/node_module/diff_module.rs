@@ -64,7 +64,7 @@ impl DiffedPair {
 }
 
 impl PrintTable for DiffedPair {
-    fn table_row(&self, _row_type: RowType) -> Row {
+    fn table_row(&self) -> Row {
         Row::new(vec![
             get_name_cell(&self.name, &self.dep_type),
             Cell::new(&self.version_one),

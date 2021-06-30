@@ -13,7 +13,7 @@ use exitfailure::ExitFailure;
 use regex::Regex;
 use prettytable::Table;
 
-use node_module::{NodeModule, PrintTable, RowType};
+use node_module::{NodeModule, PrintTable};
 use node_module::standard_module::StandardModule;
 use node_module::global_module::GlobalModule;
 use node_module::diff_module::{DiffModule, DiffedPair};
@@ -46,6 +46,7 @@ fn main() -> Result<(), ExitFailure> {
         } else {
             let mut dependencies = Vec::<StandardModule>::new();
             collect_dependencies(&base_path, &cli, &mut dependencies, Some(&app_pjson))?;
+            print_table(&dependencies);
             print_completion_message(format!(
                 "\n{} matches found in version {} of {}.\n",
                 dependencies.len(),
@@ -108,7 +109,7 @@ fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf,  cli: &Cli
 fn print_table<T: PrintTable>(dependencies: &Vec<T>) {
     let mut table = Table::new();
     for dependency in dependencies {
-        table.add_row(dependency.table_row(RowType::Standard));
+        table.add_row(dependency.table_row());
     }
     table.printstd();
 }

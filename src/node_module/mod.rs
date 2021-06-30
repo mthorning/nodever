@@ -20,11 +20,6 @@ pub enum DepType {
     ChildDependency,
 }
 
-//FIXME: remove this enum
-pub enum RowType {
-    Standard,
-}
-
 pub trait NodeModule {
     fn populate(&mut self, base_path: &PathBuf, cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error>;
 
@@ -42,7 +37,7 @@ pub trait NodeModule {
 }
 
 pub trait PrintTable {
-    fn table_row(&self, _row_type: RowType) -> Row {
+    fn table_row(&self) -> Row {
         row![]
     }
 }
