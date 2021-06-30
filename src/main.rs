@@ -6,7 +6,6 @@ mod pjson_detail;
 use std::default::Default;
 use std::io::{self, Error, Write};
 use std::path::PathBuf;
-use std::cmp::Ordering;
 
 use which::which;
 use structopt::StructOpt;
