@@ -16,7 +16,7 @@ use prettytable::Table;
 use node_module::{NodeModule, PrintTable};
 use node_module::standard_module::StandardModule;
 use node_module::global_module::GlobalModule;
-use node_module::diff_module::{DiffModule, DiffedPair};
+use node_module::diff_module::{DiffedPair};
 use pjson_detail::PjsonDetail;
 use cli::Cli;
 // use types::output_schema::{Schema, Schematic};
@@ -32,20 +32,17 @@ fn main() -> Result<(), ExitFailure> {
     } else {
         let base_path = get_node_modules_path(&cli.path);
         let app_pjson = PjsonDetail::from(&cli.path)?;
-        
-        if let Some(path) = &cli.diff {
-            let mut dependencies = Vec::<DiffModule>::new();
-            collect_dependencies(&base_path, &cli, &mut dependencies, Some(&app_pjson))?;
-
-            let diff_path = get_node_modules_path(&path);
-            let diff_pjson = PjsonDetail::from(&path)?;
-            let mut diff_dependencies = Vec::<DiffModule>::new();
-            collect_dependencies(&diff_path, &cli, &mut diff_dependencies, Some(&diff_pjson))?;
-            let diffed_pairs = DiffedPair::get_pairs(dependencies, diff_dependencies);
-            print_table(&diffed_pairs);
-        } else {
             let mut dependencies = Vec::<StandardModule>::new();
             collect_dependencies(&base_path, &cli, &mut dependencies, Some(&app_pjson))?;
+        
+        if let Some(path) = &cli.diff {
+            let diff_path = get_node_modules_path(&path);
+            let diff_pjson = PjsonDetail::from(&path)?;
+            let mut diff_dependencies = Vec::<StandardModule>::new();
+            collect_dependencies(&diff_path, &cli, &mut diff_dependencies, Some(&diff_pjson))?;
+            let diffed_pairs = DiffedPair::get_pairs(&dependencies, &diff_dependencies);
+            print_table(&diffed_pairs);
+        } else {
             print_table(&dependencies);
             print_completion_message(format!(
                 "\n{} matches found in version {} of {}.\n",

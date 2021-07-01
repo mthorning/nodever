@@ -40,7 +40,7 @@ impl NodeModule for GlobalModule {
 
 impl PrintTable for GlobalModule {
     fn table_row(&self) -> Row {
-        row![self.name, self.version]
+        row![c => self.name, self.version]
     }
 }
 

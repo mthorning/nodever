@@ -61,7 +61,6 @@ pub fn get_pjson_details(
 
     match required_dependencies {
         Some(deps) => {
-            // println!("{}, {:?}\n\n\n", dep_name, deps);
             match deps.get(dep_name) {
                 Some(required_version) => Some(required_version.to_string()),
                 None => None,
@@ -71,12 +70,26 @@ pub fn get_pjson_details(
     }
 }
 
-pub fn get_name_cell(name: &str, dep_type: &DepType) -> Cell {
-        let cell = Cell::new(name);
+pub fn new_cell(value: &str) -> Cell {
+    let txt = match value {
+        "" => "-",
+        _ => value,
+    };
+    let mut cell = Cell::new(txt);
+    cell.align(prettytable::format::Alignment::CENTER);
+    cell
+}
+
+pub fn get_pjson_version_cell(pjson_version: &Option<String>, dep_type: &DepType) -> Cell {
+        let value = match pjson_version {
+            Some(version) => version,
+            _ => "",
+        };
+        let cell = new_cell(value);
         match dep_type {
             DepType::ChildDependency => cell,
-            DepType::Dependency(_) => cell.style_spec("Fb"),
-            DepType::DevDependency(_) => cell.style_spec("Fm"),
+            DepType::Dependency(_) => cell.style_spec("BbFd"),
+            DepType::DevDependency(_) => cell.style_spec("BmFd"),
         }
 }
 

@@ -11,16 +11,22 @@ use crate::node_module::*;
 #[derive(Debug)]
 pub struct StandardModule {
     pub name: String,
+    pub pjson_version: Option<String>,
     pub version: String,
     pub dep_type: DepType,
 }
 
 impl NodeModule for StandardModule {
     fn populate(&mut self, path: &PathBuf, _cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
-
         let PjsonDetail { name, version, .. } = PjsonDetail::from(path)?;
-
         self.dep_type = get_dep_type(&name, app_pjson.unwrap());
+
+        self.pjson_version = match &self.dep_type {
+            DepType::ChildDependency => None,
+            DepType::Dependency(version) => Some(version.to_owned()),
+            DepType::DevDependency(version) => Some(version.to_owned()),
+        };
+
 
         self.name = name;
         self.version = version;
@@ -44,8 +50,9 @@ impl NodeModule for StandardModule {
 impl PrintTable for StandardModule {
     fn table_row(&self) -> Row {
         Row::new(vec![
-            get_name_cell(&self.name, &self.dep_type),
-            Cell::new(&self.version),
+            new_cell(&self.name),
+            get_pjson_version_cell(&self.pjson_version, &self.dep_type),
+            new_cell(&self.version),
         ])
    }
 
@@ -55,6 +62,7 @@ impl Default for StandardModule {
     fn default() -> Self {
         StandardModule {
             name: String::new(),
+            pjson_version: None,
             version: String::new(),
             dep_type: DepType::ChildDependency, 
         }

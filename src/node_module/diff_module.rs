@@ -1,38 +1,32 @@
-use std::io::Error;
-use std::path::PathBuf;
 use std::cmp::Ordering;
 
-use regex::Regex;
-
-use crate::pjson_detail::PjsonDetail;
-use crate::cli::Cli;
 use crate::node_module::*;
+use crate::node_module::standard_module::StandardModule;
 
-#[derive(Debug)]
-pub struct DiffModule {
-    pub name: String,
-    pub version: String,
-    pub dep_type: DepType,
+pub struct DiffedPair<'a> {
+    pub name: &'a str,
+    pub pjson_version_one: &'a Option<String>,
+    pub pjson_version_two: &'a Option<String>,
+    pub version_one: &'a str,
+    pub version_two: &'a str,
+    pub dep_type: &'a DepType,
 }
 
-pub struct DiffedPair {
-    pub name: String,
-    pub version_one: String,
-    pub version_two: String,
-    pub dep_type: DepType,
-}
-
-impl DiffedPair {
-    pub fn get_pairs(dependencies: Vec<DiffModule>, mut diff_dependencies: Vec<DiffModule>) -> Vec<Self> {
+impl<'a> DiffedPair<'a>{
+    pub fn get_pairs(dependencies: &'a Vec<StandardModule>, diff_dependencies: &'a Vec<StandardModule>) -> Vec<Self> {
         let mut diffed_pairs = Vec::new();
+        let mut found_deps = Vec::new();
 
         for dependency in dependencies {
-            let mut version_two = String::new();
-            for (i, diff_dependency) in diff_dependencies.iter().enumerate() {
+            let mut version_two = "";
+            let mut pjson_version_two = &None;
+
+            for diff_dependency in diff_dependencies.iter() {
                 match dependency.name.cmp(&diff_dependency.name) {
                     Ordering::Equal => {
-                        version_two = diff_dependency.version.clone();
-                        diff_dependencies.remove(i);
+                        version_two = &diff_dependency.version;
+                        pjson_version_two = &diff_dependency.pjson_version;
+                        found_deps.push(diff_dependency.name.clone());
                         break;
                     }
                     Ordering::Less => break,
@@ -40,9 +34,11 @@ impl DiffedPair {
                 }
             }
             let new_pair = DiffedPair{ 
-                name: dependency.name, 
-                dep_type: dependency.dep_type, 
-                version_one: dependency.version,
+                name: &dependency.name, 
+                dep_type: &dependency.dep_type, 
+                pjson_version_one: &dependency.pjson_version,
+                version_one: &dependency.version,
+                pjson_version_two, 
                 version_two,
             };
             diffed_pairs.push(new_pair);
@@ -50,12 +46,16 @@ impl DiffedPair {
 
         //Add left over diff_dependencies
         for diff_dependency in diff_dependencies {
-            diffed_pairs.push(DiffedPair{ 
-                name: diff_dependency.name, 
-                dep_type: diff_dependency.dep_type, 
-                version_one: String::new(), 
-                version_two: diff_dependency.version 
-            });
+            if !found_deps.contains(&diff_dependency.name) {
+                diffed_pairs.push(DiffedPair{ 
+                    name: &diff_dependency.name, 
+                    dep_type: &diff_dependency.dep_type, 
+                    pjson_version_one: &None,
+                    pjson_version_two: &diff_dependency.pjson_version,
+                    version_one: "",
+                    version_two: &diff_dependency.version 
+                });
+            }
         }
 
         diffed_pairs.sort_by(|a, b| a.name.cmp(&b.name));
@@ -63,48 +63,14 @@ impl DiffedPair {
     }
 }
 
-impl PrintTable for DiffedPair {
+impl<'a> PrintTable for DiffedPair<'a> {
     fn table_row(&self) -> Row {
         Row::new(vec![
-            get_name_cell(&self.name, &self.dep_type),
-            Cell::new(&self.version_one),
-            Cell::new(&self.version_two),
+            new_cell(&self.name),
+            get_pjson_version_cell(&self.pjson_version_one, &self.dep_type),
+            new_cell(&self.version_one),
+            get_pjson_version_cell(&self.pjson_version_two, &self.dep_type),
+            new_cell(&self.version_two),
         ])
    }
-}
-
-impl NodeModule for DiffModule {
-    fn populate(&mut self, path: &PathBuf, _cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
-        let PjsonDetail { name, version, .. } = PjsonDetail::from(path)?;
-
-        self.dep_type = get_dep_type(&name, app_pjson.unwrap());
-
-        self.name = name;
-        self.version = version;
-
-        Ok(())
-    }
-
-    fn filter_by_regex(&self, re: &Regex) -> bool {
-        re.is_match(&self.name)
-    }
-
-    fn filter_by_args(&self, cli: &Cli) -> bool {
-        standard_filter(&self.dep_type, &cli)
-    }
-
-    fn order(&self, to_compare: &DiffModule) -> Ordering {
-        self.name.cmp(&to_compare.name)
-    }
-
-}
-
-impl Default for DiffModule {
-    fn default() -> Self {
-        DiffModule {
-            name: String::new(),
-            version: String::new(),
-            dep_type: DepType::ChildDependency, 
-        }
-    }
 }
