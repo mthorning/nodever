@@ -105,6 +105,8 @@ fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf,  cli: &Cli
 
 fn print_table<T: PrintTable>(dependencies: &Vec<T>) {
     let mut table = Table::new();
+    if dependencies.len() == 0 { return; }
+
     for dependency in dependencies {
         table.add_row(dependency.table_row());
     }
