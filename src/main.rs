@@ -2,6 +2,7 @@
 mod node_module;
 mod cli;
 mod pjson_detail;
+mod semver;
 
 use std::default::Default;
 use std::io::{self, Error, Write};
@@ -16,7 +17,7 @@ use prettytable::Table;
 use node_module::{NodeModule, PrintTable};
 use node_module::standard_module::StandardModule;
 use node_module::global_module::GlobalModule;
-use node_module::diff_module::{DiffedPair};
+use node_module::diffed_pair::{DiffedPair};
 use pjson_detail::PjsonDetail;
 use cli::Cli;
 // use types::output_schema::{Schema, Schematic};

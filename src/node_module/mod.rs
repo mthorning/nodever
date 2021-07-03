@@ -1,6 +1,6 @@
 pub mod standard_module;
 pub mod global_module;
-pub mod diff_module;
+pub mod diffed_pair;
 
 use std::collections::HashMap;
 use std::io::Error;
@@ -81,11 +81,7 @@ pub fn new_cell(value: &str) -> Cell {
 }
 
 pub fn get_pjson_version_cell(pjson_version: &Option<String>, dep_type: &DepType) -> Cell {
-        let value = match pjson_version {
-            Some(version) => version,
-            _ => "",
-        };
-        let cell = new_cell(value);
+        let cell = new_cell(pjson_version.as_ref().map_or("", |version| &version));
         match dep_type {
             DepType::ChildDependency => cell,
             DepType::Dependency(_) => cell.style_spec("BbFd"),
