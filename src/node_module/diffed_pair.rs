@@ -2,13 +2,14 @@ use std::cmp::Ordering;
 
 use crate::node_module::*;
 use crate::node_module::standard_module::StandardModule;
+use crate::semver::Semver;
 
 pub struct DiffedPair<'a> {
     pub name: &'a str,
     pub pjson_version_one: &'a Option<String>,
     pub pjson_version_two: &'a Option<String>,
-    pub version_one: &'a str,
-    pub version_two: &'a str,
+    pub version_one: Option<Semver<'a>>,
+    pub version_two: Option<Semver<'a>>,
     pub dep_type: &'a DepType,
 }
 
@@ -37,9 +38,9 @@ impl<'a> DiffedPair<'a>{
                 name: &dependency.name, 
                 dep_type: &dependency.dep_type, 
                 pjson_version_one: &dependency.pjson_version,
-                version_one: &dependency.version,
+                version_one: Some(Semver::from(&dependency.version)),
                 pjson_version_two, 
-                version_two,
+                version_two: None,
             };
             diffed_pairs.push(new_pair);
         }
@@ -52,8 +53,8 @@ impl<'a> DiffedPair<'a>{
                     dep_type: &diff_dependency.dep_type, 
                     pjson_version_one: &None,
                     pjson_version_two: &diff_dependency.pjson_version,
-                    version_one: "",
-                    version_two: &diff_dependency.version 
+                    version_one: None,
+                    version_two: Some(Semver::from(&diff_dependency.version)),
                 });
             }
         }
@@ -68,9 +69,33 @@ impl<'a> PrintTable for DiffedPair<'a> {
         Row::new(vec![
             new_cell(&self.name),
             get_pjson_version_cell(&self.pjson_version_one, &self.dep_type),
-            new_cell(&self.version_one),
+            // new_cell(&self.version_one),
             get_pjson_version_cell(&self.pjson_version_two, &self.dep_type),
-            new_cell(&self.version_two),
+            // new_cell(&self.version_two),
         ])
    }
+}
+
+fn diffed_cells(version_one: &Option<Semver>, version_two: &Option<Semver>) -> (Cell, Cell) {
+
+    let cell = |version: &Option<Semver>| new_cell(version.map_or("", |version| &version.to_string()));
+
+    let cell_one = cell(version_one);
+    let cell_two = cell(version_two);
+
+    if version_one.is_none() || version_two.is_none() { return (cell_one, cell_two); }
+    
+    let styles = match version_one.unwrap().cmp(&version_two.unwrap()) {
+        Ordering::Equal => {
+            ["Fg", "Fg"]
+        }
+        Ordering::Less => {
+            ["Fr", "Fg"]
+        }
+        Ordering::Greater => {
+            ["Fg", "Fr"]
+        }
+    };
+
+    (cell_one.style_spec(styles[0]), cell_two.style_spec(styles[2]))
 }
