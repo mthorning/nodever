@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 use prettytable::{Attr, color};
 
 use crate::node_module::*;
@@ -8,42 +6,39 @@ use crate::semver::Semver;
 
 pub struct DiffedPair<'a> {
     pub name: &'a str,
-    pub pjson_version_one: &'a Option<String>,
-    pub pjson_version_two: &'a Option<String>,
-    pub version_one: Option<Semver<'a>>,
-    pub version_two: Option<Semver<'a>>,
-    pub dep_type: &'a DepType,
+    pub pjson_version: (&'a Option<String>, &'a Option<String>),
+    pub version: (Option<Semver<'a>>, Option<Semver<'a>>),
+    pub dep_type: (&'a DepType, &'a DepType),
 }
 
 impl<'a> DiffedPair<'a>{
+    pub fn from(dependency: &'a StandardModule) -> Self {
+        DiffedPair {
+            name: &dependency.name,
+            pjson_version: (&dependency.pjson_version, &None),
+            version: (Some(Semver::from(&dependency.version)), None),
+            dep_type: (&dependency.dep_type, &DepType::ChildDependency),
+        }
+    }
+
     pub fn get_pairs(dependencies: &'a Vec<StandardModule>, diff_dependencies: &'a Vec<StandardModule>) -> Vec<Self> {
         let mut diffed_pairs = Vec::new();
         let mut found_deps = Vec::new();
 
         for dependency in dependencies {
-            let mut version_two = None;
-            let mut pjson_version_two = &None;
+            let mut new_pair = DiffedPair::from(&dependency);
 
             for diff_dependency in diff_dependencies.iter() {
-                match dependency.name.cmp(&diff_dependency.name) {
-                    Ordering::Equal => {
-                        version_two = Some(Semver::from(&diff_dependency.version));
-                        pjson_version_two = &diff_dependency.pjson_version;
+                if dependency.name == diff_dependency.name {
+                        new_pair.version.1 = Some(Semver::from(&diff_dependency.version));
+                        new_pair.pjson_version.1 = &diff_dependency.pjson_version;
                         found_deps.push(diff_dependency.name.clone());
                         break;
-                    }
-                    Ordering::Less => break,
-                    Ordering::Greater => (),
+                }
+                if dependency.name < diff_dependency.name {
+                    break;
                 }
             }
-            let new_pair = DiffedPair{ 
-                name: &dependency.name, 
-                dep_type: &dependency.dep_type, 
-                pjson_version_one: &dependency.pjson_version,
-                version_one: Some(Semver::from(&dependency.version)),
-                pjson_version_two, 
-                version_two,
-            };
             diffed_pairs.push(new_pair);
         }
 
@@ -52,11 +47,9 @@ impl<'a> DiffedPair<'a>{
             if !found_deps.contains(&diff_dependency.name) {
                 diffed_pairs.push(DiffedPair{ 
                     name: &diff_dependency.name, 
-                    dep_type: &diff_dependency.dep_type, 
-                    pjson_version_one: &None,
-                    pjson_version_two: &diff_dependency.pjson_version,
-                    version_one: None,
-                    version_two: Some(Semver::from(&diff_dependency.version)),
+                    dep_type: (&DepType::ChildDependency, &diff_dependency.dep_type),
+                    pjson_version: (&None, &diff_dependency.pjson_version),
+                    version: (None, Some(Semver::from(&diff_dependency.version))),
                 });
             }
         }
@@ -68,12 +61,12 @@ impl<'a> DiffedPair<'a>{
 
 impl<'a> PrintTable for DiffedPair<'a> {
     fn table_row(&self) -> Row {
-        let (version_one, version_two) = diffed_cells(&self.version_one, &self.version_two);
+        let (version_one, version_two) = diffed_cells(&self.version.0, &self.version.1);
         Row::new(vec![
             new_cell(&self.name),
-            get_pjson_version_cell(&self.pjson_version_one, &self.dep_type),
+            get_pjson_version_cell(&self.pjson_version.0, &self.dep_type.0),
             version_one,
-            get_pjson_version_cell(&self.pjson_version_two, &self.dep_type),
+            get_pjson_version_cell(&self.pjson_version.1, &self.dep_type.1),
             version_two,
         ])
    }
@@ -81,25 +74,30 @@ impl<'a> PrintTable for DiffedPair<'a> {
 
 fn diffed_cells(version_one: &Option<Semver>, version_two: &Option<Semver>) -> (Cell, Cell) {
 
-    let cell = |version: &Option<Semver>| {
+    fn cell(version: &Option<Semver>) -> Cell {
         new_cell(&version.as_ref().map_or(String::from(""), |output| output.to_string())[..])
-    };
+    }
 
-    let cells = (cell(version_one), cell(version_two));
+    let mut cells = (cell(version_one), cell(version_two));
 
     if version_one.is_none() || version_two.is_none() { return cells; }
 
-    let cell = |cell: Cell, color: color::Color| cell.with_style(Attr::ForegroundColor(color));
-    
-    match version_one.as_ref().unwrap().cmp(&version_two.as_ref().unwrap()) {
-        Ordering::Equal => cells,
-        Ordering::Less => (
-            cell(cells.0, color::RED),
-            cell(cells.1, color::GREEN),
-        ),
-        Ordering::Greater => (
-            cell(cells.0, color::GREEN),
-            cell(cells.1, color::RED),
+    fn coloured_cell(cell: Cell, color: color::Color) -> Cell {
+        cell.with_style(Attr::ForegroundColor(color))
+    }
+
+    if version_one < version_two {
+        cells = (
+            coloured_cell(cells.0, color::RED),
+            coloured_cell(cells.1, color::GREEN),
         )
     }
+    if version_one > version_two {
+        cells = (
+            coloured_cell(cells.0, color::GREEN),
+            coloured_cell(cells.1, color::RED),
+        )
+    }
+
+    cells
 }

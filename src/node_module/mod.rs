@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::cmp::Ordering;
 
 use regex::Regex;
-use prettytable::{row, Row, Cell};
+use prettytable::{row, Row, Cell, Attr, color};
 
 use crate::pjson_detail::PjsonDetail;
 use crate::cli::Cli;
@@ -71,11 +71,7 @@ pub fn get_pjson_details(
 }
 
 pub fn new_cell(value: &str) -> Cell {
-    let txt = match value {
-        "" => "-",
-        _ => value,
-    };
-    let mut cell = Cell::new(txt);
+    let mut cell = Cell::new(value);
     cell.align(prettytable::format::Alignment::CENTER);
     cell
 }
@@ -84,8 +80,12 @@ pub fn get_pjson_version_cell(pjson_version: &Option<String>, dep_type: &DepType
         let cell = new_cell(pjson_version.as_ref().map_or("", |version| &version));
         match dep_type {
             DepType::ChildDependency => cell,
-            DepType::Dependency(_) => cell.style_spec("BbFd"),
-            DepType::DevDependency(_) => cell.style_spec("BmFd"),
+            DepType::Dependency(_) => cell
+                .with_style(Attr::BackgroundColor(color::BLUE))
+                .with_style(Attr::ForegroundColor(color::BLACK)),
+            DepType::DevDependency(_) => cell
+                .with_style(Attr::BackgroundColor(color::MAGENTA))
+                .with_style(Attr::ForegroundColor(color::BLACK)),
         }
 }
 
