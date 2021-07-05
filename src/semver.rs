@@ -1,6 +1,12 @@
 use regex::Regex;
 use std::cmp::Ordering;
 
+#[cfg(not(test))]
+use crate::cli::Cli;
+
+#[cfg(test)]
+use tests::Cli;
+
 #[derive(Debug)]
 pub struct Semver<'a> {
     pub major: &'a str,
@@ -35,7 +41,10 @@ impl<'a> Semver<'a> {
             version = format!("{}-{}", version, pre_release);
         }
         if let Some(build_metadata) = self.build_metadata {
-            version = format!("{}+{}", version, build_metadata);
+            let cli = Cli::get();
+            if cli.meta {
+                version = format!("{}+{}", version, build_metadata);
+            }
         }
         version
     }
@@ -109,6 +118,17 @@ impl<'a> Eq for Semver<'a> {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    pub struct Cli {
+        pub meta: bool,
+    }
+    impl Cli {
+        pub fn get() -> Self {
+           Cli {
+               meta: true
+            }
+        }
+    }
 
     #[test]
     fn creates_semver() {

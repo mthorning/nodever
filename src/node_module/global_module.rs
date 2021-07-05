@@ -4,7 +4,6 @@ use std::path::PathBuf;
 use regex::Regex;
 
 use crate::pjson_detail::PjsonDetail;
-use crate::cli::Cli;
 use crate::node_module::*;
 
 pub struct GlobalModule {
@@ -17,7 +16,7 @@ impl NodeModule for GlobalModule {
         re.is_match(&self.name)
     }
 
-    fn populate(&mut self, path: &PathBuf, _cli: &Cli, _app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
+    fn populate(&mut self, path: &PathBuf, _app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
 
         let PjsonDetail { name, version, .. } = match PjsonDetail::from(path) {
             Ok(pjson_details) => pjson_details,

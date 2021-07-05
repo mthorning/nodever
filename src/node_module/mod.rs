@@ -21,7 +21,7 @@ pub enum DepType {
 }
 
 pub trait NodeModule {
-    fn populate(&mut self, base_path: &PathBuf, cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error>;
+    fn populate(&mut self, base_path: &PathBuf, app_pjson: Option<&PjsonDetail>) -> Result<(), Error>;
 
     fn filter_by_regex(&self, _re: &Regex) -> bool {
         true
@@ -31,7 +31,7 @@ pub trait NodeModule {
         Ordering::Equal
     }
     
-    fn filter_by_args(&self, _cli: &Cli) -> bool {
+    fn filter_by_args(&self) -> bool {
         true
     }
 }
@@ -89,17 +89,18 @@ pub fn get_pjson_version_cell(pjson_version: &Option<String>, dep_type: &DepType
         }
 }
 
-pub fn standard_filter(dep_type: &DepType, cli: &Cli) -> bool {
-        match dep_type {
-            DepType::ChildDependency => {
-                if cli.dev ||  cli.dep { return false; }
-            }
-            DepType::Dependency(_) => {
-                if cli.dev && !cli.dep { return false; }
-            }
-            DepType::DevDependency(_) => {
-                if cli.dep && ! cli.dev { return false; }
-            }
+pub fn standard_filter(dep_type: &DepType) -> bool {
+    let cli = Cli::get();
+    match dep_type {
+        DepType::ChildDependency => {
+            if cli.dev ||  cli.dep { return false; }
         }
-        true
+        DepType::Dependency(_) => {
+            if cli.dev && !cli.dep { return false; }
+        }
+        DepType::DevDependency(_) => {
+            if cli.dep && ! cli.dev { return false; }
+        }
+    }
+    true
 }

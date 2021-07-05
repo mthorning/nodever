@@ -9,7 +9,6 @@ use std::io::{self, Error, Write};
 use std::path::PathBuf;
 
 use which::which;
-use structopt::StructOpt;
 use exitfailure::ExitFailure;
 use regex::Regex;
 use prettytable::Table;
@@ -17,30 +16,30 @@ use prettytable::Table;
 use node_module::{NodeModule, PrintTable};
 use node_module::standard_module::StandardModule;
 use node_module::global_module::GlobalModule;
-use node_module::diffed_pair::{DiffedPair};
+use node_module::diffed_pair::DiffedPair;
 use pjson_detail::PjsonDetail;
 use cli::Cli;
-// use types::output_schema::{Schema, Schematic};
 
 fn main() -> Result<(), ExitFailure> {
-    let cli = Cli::from_args();
+    let cli = Cli::get();
+
 
     if cli.global {
         let base_path = get_node_modules_path(&get_global_path());
         let mut dependencies = Vec::<GlobalModule>::new();
-        collect_dependencies(&base_path, &cli, &mut dependencies, None)?;
+        collect_dependencies(&base_path, &mut dependencies, None)?;
         print_table(&dependencies);
     } else {
         let base_path = get_node_modules_path(&cli.path);
         let app_pjson = PjsonDetail::from(&cli.path)?;
             let mut dependencies = Vec::<StandardModule>::new();
-            collect_dependencies(&base_path, &cli, &mut dependencies, Some(&app_pjson))?;
+            collect_dependencies(&base_path, &mut dependencies, Some(&app_pjson))?;
         
         if let Some(path) = &cli.diff {
             let diff_path = get_node_modules_path(&path);
             let diff_pjson = PjsonDetail::from(&path)?;
             let mut diff_dependencies = Vec::<StandardModule>::new();
-            collect_dependencies(&diff_path, &cli, &mut diff_dependencies, Some(&diff_pjson))?;
+            collect_dependencies(&diff_path, &mut diff_dependencies, Some(&diff_pjson))?;
             let diffed_pairs = DiffedPair::get_pairs(&dependencies, &diff_dependencies);
             print_table(&diffed_pairs);
         } else {
@@ -72,8 +71,9 @@ fn get_node_modules_path(path: &PathBuf) -> PathBuf {
 }
 
 
-fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf,  cli: &Cli, dependencies: &mut Vec<T>, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
+fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf, dependencies: &mut Vec<T>, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
     let node_modules = base_path.read_dir()?;
+    let cli = Cli::get();
 
     let filter_re = Regex::new(&cli.filter).unwrap();
 
@@ -88,11 +88,11 @@ fn collect_dependencies<T: NodeModule + Default>(base_path: &PathBuf,  cli: &Cli
             dep_path.push(&folder_name);
 
             if folder_name.starts_with('@') {
-                collect_dependencies(&dep_path, cli, dependencies, app_pjson)?;
+                collect_dependencies(&dep_path, dependencies, app_pjson)?;
             } else {
                 let mut detail: T = Default::default();
-                detail.populate(&dep_path, cli, app_pjson)?;
-                if detail.filter_by_regex(&filter_re) && detail.filter_by_args(&cli) {
+                detail.populate(&dep_path, app_pjson)?;
+                if detail.filter_by_regex(&filter_re) && detail.filter_by_args() {
                     dependencies.push(detail)
                 }
             }

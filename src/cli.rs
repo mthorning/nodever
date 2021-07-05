@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use structopt::StructOpt;
+use once_cell::sync::OnceCell;
 
 #[derive(StructOpt)]
 pub struct Cli {
@@ -19,10 +20,24 @@ pub struct Cli {
     pub global: bool,
 
     /// Show dependencies.
-    #[structopt(short = "D" )] 
+    #[structopt(long, short = "D" )] 
     pub dep: bool,
 
     /// Show devDependencies.
-    #[structopt(short = "d")]
+    #[structopt(long, short = "d")]
     pub dev: bool,
+
+    /// Include build metadata in versions
+    #[structopt(long, short = "m")]
+    pub meta: bool,
+}
+
+static INSTANCE: OnceCell<Cli> = OnceCell::new();
+
+impl Cli {
+    pub fn get() -> &'static Cli {
+        INSTANCE.get_or_init(|| {
+            Cli::from_args()
+        })
+    }
 }

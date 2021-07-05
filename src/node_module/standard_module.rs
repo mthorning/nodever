@@ -5,7 +5,6 @@ use std::cmp::Ordering;
 use regex::Regex;
 
 use crate::pjson_detail::PjsonDetail;
-use crate::cli::Cli;
 use crate::node_module::*;
 
 #[derive(Debug)]
@@ -17,7 +16,7 @@ pub struct StandardModule {
 }
 
 impl NodeModule for StandardModule {
-    fn populate(&mut self, path: &PathBuf, _cli: &Cli, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
+    fn populate(&mut self, path: &PathBuf, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
         let PjsonDetail { name, version, .. } = PjsonDetail::from(path)?;
         self.dep_type = get_dep_type(&name, app_pjson.unwrap());
 
@@ -38,8 +37,8 @@ impl NodeModule for StandardModule {
         re.is_match(&self.name)
     }
 
-    fn filter_by_args(&self, cli: &Cli) -> bool {
-        standard_filter(&self.dep_type, &cli)
+    fn filter_by_args(&self) -> bool {
+        standard_filter(&self.dep_type)
     }
 
     fn order(&self, to_compare: &StandardModule) -> Ordering {
