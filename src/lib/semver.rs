@@ -18,20 +18,15 @@ pub struct Semver {
 
 impl Semver {
     pub fn from(version: String) -> Self {
-        let re = Regex::new(r#"^(\d+)\.(\d+)\.(\d+)(?:-([.\-0-9a-zA-Z]+))?(?:\+([.\-0-9a-zA-Z]+))?$"#).unwrap();
-        let groups = re.captures(&version).expect("Failed to capture regex groups");
-        if groups.len() != 6 {
-            panic!("Couldn't capture all parts of the semver {}", version);
-        }
-        
-        let get_group = |number| groups.get(number).map_or(None, |version| Some(version.as_str().to_string()));
+        let re = Regex::new(r#"^[~>=<^]*(\d+)\.(\d+)\.(\d+)(?:-([.\-0-9a-zA-Z]+))?(?:\+([.\-0-9a-zA-Z]+))?$"#).unwrap();
+        let groups = re.captures(&version);
 
         Semver {
-            major: get_group(1).unwrap(),
-            minor: get_group(2).unwrap(),
-            patch: get_group(3).unwrap(),
-            pre_release: get_group(4),
-            build_metadata: get_group(5),
+            major: groups.get(1),
+            minor: groups.get(2), 
+            patch: groups.get(3),
+            pre_release: groups.get(4),
+            build_metadata: groups.get(5),
         }  
     }
 

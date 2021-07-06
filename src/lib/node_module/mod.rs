@@ -14,7 +14,6 @@ use crate::pjson_detail::PjsonDetail;
 use crate::cli::Cli;
 use crate::semver::Semver;
 
-#[derive(Debug, Clone, PartialEq)]
 pub enum DepType {
     Dependency(Semver),
     DevDependency(Semver),
@@ -77,14 +76,14 @@ pub fn new_cell(value: &str) -> Cell {
     cell
 }
 
-pub fn get_pjson_version_cell(pjson_version: &Option<Semver>, dep_type: &DepType) -> Cell {
-        let cell = new_cell(pjson_version.as_ref().map_or("", |version| &version.to_string()));
+pub fn get_pjson_version_cell(dep_type: &DepType) -> Cell {
+        // let cell = new_cell(pjson_version.as_ref().map_or("", |version| &version.to_string()));
         match dep_type {
-            DepType::ChildDependency => cell,
-            DepType::Dependency(_) => cell
+            DepType::ChildDependency => new_cell(""),
+            DepType::Dependency(pjson_version) => new_cell(&pjson_version.to_string())
                 .with_style(Attr::BackgroundColor(color::BLUE))
                 .with_style(Attr::ForegroundColor(color::BLACK)),
-            DepType::DevDependency(_) => cell
+            DepType::DevDependency(pjson_version) => new_cell(&pjson_version.to_string())
                 .with_style(Attr::BackgroundColor(color::MAGENTA))
                 .with_style(Attr::ForegroundColor(color::BLACK)),
         }

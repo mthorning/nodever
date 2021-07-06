@@ -6,7 +6,6 @@ use crate::semver::Semver;
 
 pub struct DiffedPair<'a> {
     pub name: &'a str,
-    pub pjson_version: (&'a Option<String>, &'a Option<String>),
     pub version: (&'a Option<Semver>, &'a Option<Semver>),
     pub dep_type: (&'a DepType, &'a DepType),
 }
@@ -15,7 +14,6 @@ impl<'a> DiffedPair<'a>{
     pub fn from(dependency: &'a StandardModule) -> Self {
         DiffedPair {
             name: &dependency.name,
-            pjson_version: (&dependency.pjson_version, &None),
             version: (&dependency.version, &None),
             dep_type: (&dependency.dep_type, &DepType::ChildDependency),
         }
@@ -31,7 +29,6 @@ impl<'a> DiffedPair<'a>{
             for diff_dependency in diff_dependencies.iter() {
                 if dependency.name == diff_dependency.name {
                         new_pair.version.1 = &diff_dependency.version;
-                        new_pair.pjson_version.1 = &diff_dependency.pjson_version;
                         found_deps.push(diff_dependency.name.clone());
                         break;
                 }
@@ -48,7 +45,6 @@ impl<'a> DiffedPair<'a>{
                 diffed_pairs.push(DiffedPair{ 
                     name: &diff_dependency.name, 
                     dep_type: (&DepType::ChildDependency, &diff_dependency.dep_type),
-                    pjson_version: (&None, &diff_dependency.pjson_version),
                     version: (&None, &diff_dependency.version),
                 });
             }
@@ -64,9 +60,9 @@ impl<'a> PrintTable for DiffedPair<'a> {
         let (version_one, version_two) = diffed_cells(&self.version.0, &self.version.1);
         Row::new(vec![
             new_cell(&self.name),
-            get_pjson_version_cell(&self.pjson_version.0, &self.dep_type.0),
+            get_pjson_version_cell(&self.dep_type.0),
             version_one,
-            get_pjson_version_cell(&self.pjson_version.1, &self.dep_type.1),
+            get_pjson_version_cell(&self.dep_type.1),
             version_two,
         ])
    }
