@@ -12,11 +12,12 @@ use prettytable::{row, Row, Cell, Attr, color};
 
 use crate::pjson_detail::PjsonDetail;
 use crate::cli::Cli;
+use crate::semver::Semver;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DepType {
-    Dependency(String),
-    DevDependency(String),
+    Dependency(Semver),
+    DevDependency(Semver),
     ChildDependency,
 }
 
@@ -57,12 +58,12 @@ pub fn get_dep_type(name: &str, app_pjson: &PjsonDetail) -> DepType {
 pub fn get_pjson_details(
     dep_name: &str,
     required_dependencies: &Option<HashMap<String, String>>,
-) -> Option<String> {
+) -> Option<Semver> {
 
     match required_dependencies {
         Some(deps) => {
             match deps.get(dep_name) {
-                Some(required_version) => Some(required_version.to_string()),
+                Some(required_version) => Some(Semver::from(required_version.to_string())),
                 None => None,
             }
         },
@@ -76,8 +77,8 @@ pub fn new_cell(value: &str) -> Cell {
     cell
 }
 
-pub fn get_pjson_version_cell(pjson_version: &Option<String>, dep_type: &DepType) -> Cell {
-        let cell = new_cell(pjson_version.as_ref().map_or("", |version| &version));
+pub fn get_pjson_version_cell(pjson_version: &Option<Semver>, dep_type: &DepType) -> Cell {
+        let cell = new_cell(pjson_version.as_ref().map_or("", |version| &version.to_string()));
         match dep_type {
             DepType::ChildDependency => cell,
             DepType::Dependency(_) => cell

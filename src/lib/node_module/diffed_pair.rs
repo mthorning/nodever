@@ -7,7 +7,7 @@ use crate::semver::Semver;
 pub struct DiffedPair<'a> {
     pub name: &'a str,
     pub pjson_version: (&'a Option<String>, &'a Option<String>),
-    pub version: (Option<Semver<'a>>, Option<Semver<'a>>),
+    pub version: (&'a Option<Semver>, &'a Option<Semver>),
     pub dep_type: (&'a DepType, &'a DepType),
 }
 
@@ -16,7 +16,7 @@ impl<'a> DiffedPair<'a>{
         DiffedPair {
             name: &dependency.name,
             pjson_version: (&dependency.pjson_version, &None),
-            version: (Some(Semver::from(&dependency.version)), None),
+            version: (&dependency.version, &None),
             dep_type: (&dependency.dep_type, &DepType::ChildDependency),
         }
     }
@@ -30,7 +30,7 @@ impl<'a> DiffedPair<'a>{
 
             for diff_dependency in diff_dependencies.iter() {
                 if dependency.name == diff_dependency.name {
-                        new_pair.version.1 = Some(Semver::from(&diff_dependency.version));
+                        new_pair.version.1 = &diff_dependency.version;
                         new_pair.pjson_version.1 = &diff_dependency.pjson_version;
                         found_deps.push(diff_dependency.name.clone());
                         break;
@@ -49,7 +49,7 @@ impl<'a> DiffedPair<'a>{
                     name: &diff_dependency.name, 
                     dep_type: (&DepType::ChildDependency, &diff_dependency.dep_type),
                     pjson_version: (&None, &diff_dependency.pjson_version),
-                    version: (None, Some(Semver::from(&diff_dependency.version))),
+                    version: (&None, &diff_dependency.version),
                 });
             }
         }
@@ -75,7 +75,11 @@ impl<'a> PrintTable for DiffedPair<'a> {
 fn diffed_cells(version_one: &Option<Semver>, version_two: &Option<Semver>) -> (Cell, Cell) {
 
     fn cell(version: &Option<Semver>) -> Cell {
-        new_cell(&version.as_ref().map_or(String::from(""), |output| output.to_string())[..])
+        let cell_contents = match &version {
+            Some(contents) => contents.to_string(),
+            None => String::new(),
+        };
+        new_cell(&cell_contents)
     }
 
     let mut cells = (cell(version_one), cell(version_two));

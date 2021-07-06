@@ -8,23 +8,23 @@ use crate::cli::Cli;
 use tests::Cli;
 
 #[derive(Debug)]
-pub struct Semver<'a> {
-    pub major: &'a str,
-    pub minor: &'a str,
-    pub patch: &'a str,
-    pub pre_release: Option<&'a str>,
-    pub build_metadata: Option<&'a str>,
+pub struct Semver {
+    pub major: String,
+    pub minor: String,
+    pub patch: String,
+    pub pre_release: Option<String>,
+    pub build_metadata: Option<String>,
 }
 
-impl<'a> Semver<'a> {
-    pub fn from(version: &'a str) -> Self {
+impl Semver {
+    pub fn from(version: String) -> Self {
         let re = Regex::new(r#"^(\d+)\.(\d+)\.(\d+)(?:-([.\-0-9a-zA-Z]+))?(?:\+([.\-0-9a-zA-Z]+))?$"#).unwrap();
-        let groups = re.captures(version).unwrap();
+        let groups = re.captures(&version).expect("Failed to capture regex groups");
         if groups.len() != 6 {
             panic!("Couldn't capture all parts of the semver {}", version);
         }
         
-        let get_group = |number| groups.get(number).map_or(None, |version| Some(version.as_str()));
+        let get_group = |number| groups.get(number).map_or(None, |version| Some(version.as_str().to_string()));
 
         Semver {
             major: get_group(1).unwrap(),
@@ -37,10 +37,10 @@ impl<'a> Semver<'a> {
 
     pub fn to_string(&self) -> String {
         let mut version = format!("{}.{}.{}", self.major, self.minor, self.patch);
-        if let Some(pre_release) = self.pre_release {
+        if let Some(pre_release) = &self.pre_release {
             version = format!("{}-{}", version, pre_release);
         }
-        if let Some(build_metadata) = self.build_metadata {
+        if let Some(build_metadata) = &self.build_metadata {
             let cli = Cli::get();
             if cli.meta {
                 version = format!("{}+{}", version, build_metadata);
@@ -74,16 +74,16 @@ fn compare_parts(parts: &Vec<&str>, other_parts: &Vec<&str>) -> Ordering {
     Ordering::Equal
 }
 
-impl<'a> Ord for Semver<'a> {
+impl Ord for Semver {
     fn cmp(&self, other: &Self) -> Ordering {
         let compared = compare_parts(
-            &vec![self.major, self.minor, self.patch],
-            &vec![other.major, other.minor, other.patch],
+            &vec![&self.major, &self.minor, &self.patch],
+            &vec![&other.major, &other.minor, &other.patch],
         );  
 
         if let Ordering::Equal = compared {
-            return match self.pre_release {
-                Some(tags) => match other.pre_release {
+            return match &self.pre_release {
+                Some(tags) => match &other.pre_release {
                     None => Ordering::Less,
                     Some(other_tags) => compare_parts(
                         &tags.split('.').collect(),
@@ -101,19 +101,19 @@ impl<'a> Ord for Semver<'a> {
 
 }
 
-impl<'a> PartialOrd for Semver<'a>  {
+impl PartialOrd for Semver  {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<'a> PartialEq for Semver<'a> {
+impl PartialEq for Semver {
     fn eq(&self, other: &Self) -> bool {
         self.to_string() == other.to_string()
     }
 }
 
-impl<'a> Eq for Semver<'a> {}
+impl Eq for Semver {}
 
 #[cfg(test)]
 mod tests {
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn creates_semver() {
-        let semver = Semver::from("8.1.2");
+        let semver = Semver::from(String::from("8.1.2"));
         assert_eq!(semver.major, "8");
         assert_eq!(semver.minor, "1");
         assert_eq!(semver.patch, "2");
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn creates_complex_semver() {
-        let semver = Semver::from("8.1.2-alpha.0.1+1.2.3");
+        let semver = Semver::from(String::from("8.1.2-alpha.0.1+1.2.3"));
         assert_eq!(semver.major, "8");
         assert_eq!(semver.minor, "1");
         assert_eq!(semver.patch, "2");
@@ -160,49 +160,49 @@ mod tests {
 
     #[test]
     fn compares_two_semvers() {
-        let main = Semver::from("8.4.12");
-        assert_eq!(main.cmp(&Semver::from("7.4.12")), Ordering::Greater);
-        assert_eq!(main.cmp(&Semver::from("8.3.12")), Ordering::Greater);
-        assert_eq!(main.cmp(&Semver::from("8.4.11")), Ordering::Greater);
-        assert_eq!(main.cmp(&Semver::from("8.4.13")), Ordering::Less);
-        assert_eq!(main.cmp(&Semver::from("8.5.0")), Ordering::Less);
-        assert_eq!(main.cmp(&Semver::from("9.0.0")), Ordering::Less);
-        assert_eq!(main.cmp(&Semver::from("8.4.12")), Ordering::Equal);
+        let main = Semver::from(String::from("8.4.12"));
+        assert_eq!(main.cmp(&Semver::from(String::from("7.4.12"))), Ordering::Greater);
+        assert_eq!(main.cmp(&Semver::from(String::from("8.3.12"))), Ordering::Greater);
+        assert_eq!(main.cmp(&Semver::from(String::from("8.4.11"))), Ordering::Greater);
+        assert_eq!(main.cmp(&Semver::from(String::from("8.4.13"))), Ordering::Less);
+        assert_eq!(main.cmp(&Semver::from(String::from("8.5.0"))), Ordering::Less);
+        assert_eq!(main.cmp(&Semver::from(String::from("9.0.0"))), Ordering::Less);
+        assert_eq!(main.cmp(&Semver::from(String::from("8.4.12"))), Ordering::Equal);
     }
 
     #[test]
     fn use_operators() {
-        let main = Semver::from("8.4.12");
-        assert!(main > Semver::from("7.4.12"));
-        assert!(main > Semver::from("8.3.12"));
-        assert!(main > Semver::from("8.4.11"));
-        assert!(main < Semver::from("8.4.13"));
-        assert!(main < Semver::from("8.5.0"));
-        assert!(main < Semver::from("9.0.0"));
-        assert!(main  == Semver::from("8.4.12"));
+        let main = Semver::from(String::from("8.4.12"));
+        assert!(main > Semver::from(String::from("7.4.12")));
+        assert!(main > Semver::from(String::from("8.3.12")));
+        assert!(main > Semver::from(String::from("8.4.11")));
+        assert!(main < Semver::from(String::from("8.4.13")));
+        assert!(main < Semver::from(String::from("8.5.0")));
+        assert!(main < Semver::from(String::from("9.0.0")));
+        assert!(main  == Semver::from(String::from("8.4.12")));
     }
 
     #[test]
     fn compares_prerelease_tags() {
-        let main = Semver::from("8.4.12");
-        assert!(main > Semver::from("8.4.12-alpha.0.1"));
-        assert!(main < Semver::from("8.4.13-alpha.0.1"));
-        assert!(main < Semver::from("8.5.0-alpha.0.1"));
-        assert!(main < Semver::from("9.0.0-alpha.0.1"));
+        let main = Semver::from(String::from("8.4.12"));
+        assert!(main > Semver::from(String::from("8.4.12-alpha.0.1")));
+        assert!(main < Semver::from(String::from("8.4.13-alpha.0.1")));
+        assert!(main < Semver::from(String::from("8.5.0-alpha.0.1")));
+        assert!(main < Semver::from(String::from("9.0.0-alpha.0.1")));
 
-        let main = Semver::from("8.4.12-alpha.1.1");
-        assert!(main < Semver::from("8.4.12-beta.0.1"));
-        assert!(main > Semver::from("8.4.12-alpha.0.1"));
-        assert!(main < Semver::from("8.4.12-alpha.2.0"));
-        assert!(main < Semver::from("8.4.12-alpha.1.2"));
-        assert!(main > Semver::from("8.4.12-alpha.1.0"));
-        assert!(main == Semver::from("8.4.12-alpha.1.1"));
+        let main = Semver::from(String::from("8.4.12-alpha.1.1"));
+        assert!(main < Semver::from(String::from("8.4.12-beta.0.1")));
+        assert!(main > Semver::from(String::from("8.4.12-alpha.0.1")));
+        assert!(main < Semver::from(String::from("8.4.12-alpha.2.0")));
+        assert!(main < Semver::from(String::from("8.4.12-alpha.1.2")));
+        assert!(main > Semver::from(String::from("8.4.12-alpha.1.0")));
+        assert!(main == Semver::from(String::from("8.4.12-alpha.1.1")));
     }
 
     #[test]
     fn returns_a_string() {
-        assert_eq!(Semver::from("8.4.12").to_string(), "8.4.12");
-        assert_eq!(Semver::from("8.4.12-alpha.1.1").to_string(), "8.4.12-alpha.1.1");
-        assert_eq!(Semver::from("8.4.12-alpha.1.1+13.xxx.3").to_string(), "8.4.12-alpha.1.1+13.xxx.3");
+        assert_eq!(Semver::from(String::from("8.4.12")).to_string(), "8.4.12");
+        assert_eq!(Semver::from(String::from("8.4.12-alpha.1.1")).to_string(), "8.4.12-alpha.1.1");
+        assert_eq!(Semver::from(String::from("8.4.12-alpha.1.1+13.xxx.3")).to_string(), "8.4.12-alpha.1.1+13.xxx.3");
     }
 }

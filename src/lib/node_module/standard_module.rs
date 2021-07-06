@@ -6,12 +6,13 @@ use regex::Regex;
 
 use crate::pjson_detail::PjsonDetail;
 use crate::node_module::*;
+use crate::semver::Semver;
 
 #[derive(Debug)]
 pub struct StandardModule {
     pub name: String,
-    pub pjson_version: Option<String>,
-    pub version: String,
+    pub pjson_version: Option<&Semver>,
+    pub version: Option<Semver>,
     pub dep_type: DepType,
 }
 
@@ -22,13 +23,13 @@ impl NodeModule for StandardModule {
 
         self.pjson_version = match &self.dep_type {
             DepType::ChildDependency => None,
-            DepType::Dependency(version) => Some(version.to_owned()),
-            DepType::DevDependency(version) => Some(version.to_owned()),
+            DepType::Dependency(version) => Some(version),
+            DepType::DevDependency(version) => Some(version),
         };
 
 
         self.name = name;
-        self.version = version;
+        self.version = Some(Semver::from(version));
 
         Ok(())
     }
@@ -48,10 +49,14 @@ impl NodeModule for StandardModule {
 
 impl PrintTable for StandardModule {
     fn table_row(&self) -> Row {
+        let version = match &self.version {
+            Some(version) => version.to_string(),
+            None => String::new(),
+        };
         Row::new(vec![
             new_cell(&self.name),
             get_pjson_version_cell(&self.pjson_version, &self.dep_type),
-            new_cell(&self.version),
+            new_cell(&version),
         ])
    }
 
@@ -62,7 +67,7 @@ impl Default for StandardModule {
         StandardModule {
             name: String::new(),
             pjson_version: None,
-            version: String::new(),
+            version: None,
             dep_type: DepType::ChildDependency, 
         }
     }
