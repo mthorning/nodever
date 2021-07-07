@@ -19,7 +19,7 @@ pub struct Semver {
 impl Semver {
     pub fn from(version: String) -> Option<Self> {
         let re = Regex::new(
-            r#"^[~>=<^]*(\d+)\.(\d+)\.(\d+)(?:-([.\-0-9a-zA-Z]+))?(?:\+([.\-0-9a-zA-Z]+))?$"#,
+            r#"[~>=<^]*(\d+)\.(\d+)\.(\d+)(?:-([.\-0-9a-zA-Z]+))?(?:\+([.\-0-9a-zA-Z]+))?"#,
         )
         .unwrap();
         match re.captures(&version) {
@@ -153,8 +153,14 @@ mod tests {
 
     #[test]
     fn handles_non_semver_string() {
-        let non_semver = Semver::from(String::from("yalc:some-file"));
+        let non_semver = Semver::from(String::from("file:.yalc/@registry/my-package"));
         assert_eq!(non_semver, None);
+    }
+
+    #[test]
+    fn handles_git_string() {
+        let non_semver = Semver::from(String::from("git+ssh://git@github.com/my-package.git#semver:~6.1.5")).unwrap();
+        assert_eq!(non_semver, make("6.1.5"));
     }
 
     #[test]
