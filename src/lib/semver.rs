@@ -17,17 +17,34 @@ pub struct Semver {
 }
 
 impl Semver {
-    pub fn from(version: String) -> Self {
-        let re = Regex::new(r#"^[~>=<^]*(\d+)\.(\d+)\.(\d+)(?:-([.\-0-9a-zA-Z]+))?(?:\+([.\-0-9a-zA-Z]+))?$"#).unwrap();
-        let groups = re.captures(&version);
+    pub fn from(version: String) -> Option<Self> {
+        let re = Regex::new(
+            r#"^[~>=<^]*(\d+)\.(\d+)\.(\d+)(?:-([.\-0-9a-zA-Z]+))?(?:\+([.\-0-9a-zA-Z]+))?$"#,
+        )
+        .unwrap();
+        match re.captures(&version) {
+            Some(captures) => {
+                let get_string = |num| {
+                    captures
+                        .get(num)
+                        .map_or(String::new(), |v| v.as_str().to_string())
+                };
+                let get_option = |num| {
+                    captures
+                        .get(num)
+                        .map_or(None, |v| Some(v.as_str().to_string()))
+                };
 
-        Semver {
-            major: groups.get(1),
-            minor: groups.get(2), 
-            patch: groups.get(3),
-            pre_release: groups.get(4),
-            build_metadata: groups.get(5),
-        }  
+                Some(Semver {
+                    major: get_string(1),
+                    minor: get_string(2),
+                    patch: get_string(3),
+                    pre_release: get_option(4),
+                    build_metadata: get_option(5),
+                })
+            }
+            None => None,
+        }
     }
 
     pub fn to_string(&self) -> String {
@@ -45,20 +62,19 @@ impl Semver {
     }
 }
 
-
 fn compare_parts(parts: &Vec<&str>, other_parts: &Vec<&str>) -> Ordering {
-   for (i, part) in parts.iter().enumerate() {
-       let other_part = other_parts[i];
-       let ordering: Ordering;
+    for (i, part) in parts.iter().enumerate() {
+        let other_part = other_parts[i];
+        let ordering: Ordering;
 
-       if let Ok(int) = part.parse::<u16>() {
+        if let Ok(int) = part.parse::<u16>() {
             if let Ok(other_int) = other_part.parse::<u16>() {
-               ordering = int.cmp(&other_int);
+                ordering = int.cmp(&other_int);
             } else {
                 ordering = part.cmp(&other_part);
             }
         } else {
-                ordering = part.cmp(&other_part);
+            ordering = part.cmp(&other_part);
         }
         if let Ordering::Equal = ordering {
             continue;
@@ -74,29 +90,27 @@ impl Ord for Semver {
         let compared = compare_parts(
             &vec![&self.major, &self.minor, &self.patch],
             &vec![&other.major, &other.minor, &other.patch],
-        );  
+        );
 
         if let Ordering::Equal = compared {
             return match &self.pre_release {
                 Some(tags) => match &other.pre_release {
                     None => Ordering::Less,
-                    Some(other_tags) => compare_parts(
-                        &tags.split('.').collect(),
-                        &other_tags.split('.').collect(),
-                    )
+                    Some(other_tags) => {
+                        compare_parts(&tags.split('.').collect(), &other_tags.split('.').collect())
+                    }
                 },
                 None => match other.pre_release {
                     None => Ordering::Equal,
                     Some(_) => Ordering::Greater,
-                }
-            }
+                },
+            };
         }
-        return compared
+        return compared;
     }
-
 }
 
-impl PartialOrd for Semver  {
+impl PartialOrd for Semver {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
@@ -119,15 +133,17 @@ mod tests {
     }
     impl Cli {
         pub fn get() -> Self {
-           Cli {
-               meta: true
-            }
+            Cli { meta: true }
         }
+    }
+
+    fn make(version: &str) -> Semver {
+        Semver::from(String::from(version)).unwrap()
     }
 
     #[test]
     fn creates_semver() {
-        let semver = Semver::from(String::from("8.1.2"));
+        let semver = make("8.1.2");
         assert_eq!(semver.major, "8");
         assert_eq!(semver.minor, "1");
         assert_eq!(semver.patch, "2");
@@ -136,8 +152,14 @@ mod tests {
     }
 
     #[test]
+    fn handles_non_semver_string() {
+        let non_semver = Semver::from(String::from("yalc:some-file"));
+        assert_eq!(non_semver, None);
+    }
+
+    #[test]
     fn creates_complex_semver() {
-        let semver = Semver::from(String::from("8.1.2-alpha.0.1+1.2.3"));
+        let semver = make("8.1.2-alpha.0.1+1.2.3");
         assert_eq!(semver.major, "8");
         assert_eq!(semver.minor, "1");
         assert_eq!(semver.patch, "2");
@@ -148,56 +170,59 @@ mod tests {
         };
 
         match semver.build_metadata {
-            Some(version) => assert_eq!(version,  "1.2.3"),
+            Some(version) => assert_eq!(version, "1.2.3"),
             None => assert!(false),
         }
     }
 
     #[test]
     fn compares_two_semvers() {
-        let main = Semver::from(String::from("8.4.12"));
-        assert_eq!(main.cmp(&Semver::from(String::from("7.4.12"))), Ordering::Greater);
-        assert_eq!(main.cmp(&Semver::from(String::from("8.3.12"))), Ordering::Greater);
-        assert_eq!(main.cmp(&Semver::from(String::from("8.4.11"))), Ordering::Greater);
-        assert_eq!(main.cmp(&Semver::from(String::from("8.4.13"))), Ordering::Less);
-        assert_eq!(main.cmp(&Semver::from(String::from("8.5.0"))), Ordering::Less);
-        assert_eq!(main.cmp(&Semver::from(String::from("9.0.0"))), Ordering::Less);
-        assert_eq!(main.cmp(&Semver::from(String::from("8.4.12"))), Ordering::Equal);
+        let main = make("8.4.12");
+        assert_eq!(main.cmp(&make("7.4.12")), Ordering::Greater);
+        assert_eq!(main.cmp(&make("8.3.12")), Ordering::Greater);
+        assert_eq!(main.cmp(&make("8.4.11")), Ordering::Greater);
+        assert_eq!(main.cmp(&make("8.4.13")), Ordering::Less);
+        assert_eq!(main.cmp(&make("8.5.0")), Ordering::Less);
+        assert_eq!(main.cmp(&make("9.0.0")), Ordering::Less);
+        assert_eq!(main.cmp(&make("8.4.12")), Ordering::Equal);
     }
 
     #[test]
     fn use_operators() {
-        let main = Semver::from(String::from("8.4.12"));
-        assert!(main > Semver::from(String::from("7.4.12")));
-        assert!(main > Semver::from(String::from("8.3.12")));
-        assert!(main > Semver::from(String::from("8.4.11")));
-        assert!(main < Semver::from(String::from("8.4.13")));
-        assert!(main < Semver::from(String::from("8.5.0")));
-        assert!(main < Semver::from(String::from("9.0.0")));
-        assert!(main  == Semver::from(String::from("8.4.12")));
+        let main = make("8.4.12");
+        assert!(main > make("7.4.12"));
+        assert!(main > make("8.3.12"));
+        assert!(main > make("8.4.11"));
+        assert!(main < make("8.4.13"));
+        assert!(main < make("8.5.0"));
+        assert!(main < make("9.0.0"));
+        assert!(main == make("8.4.12"));
     }
 
     #[test]
     fn compares_prerelease_tags() {
-        let main = Semver::from(String::from("8.4.12"));
-        assert!(main > Semver::from(String::from("8.4.12-alpha.0.1")));
-        assert!(main < Semver::from(String::from("8.4.13-alpha.0.1")));
-        assert!(main < Semver::from(String::from("8.5.0-alpha.0.1")));
-        assert!(main < Semver::from(String::from("9.0.0-alpha.0.1")));
+        let main = make("8.4.12");
+        assert!(main > make("8.4.12-alpha.0.1"));
+        assert!(main < make("8.4.13-alpha.0.1"));
+        assert!(main < make("8.5.0-alpha.0.1"));
+        assert!(main < make("9.0.0-alpha.0.1"));
 
-        let main = Semver::from(String::from("8.4.12-alpha.1.1"));
-        assert!(main < Semver::from(String::from("8.4.12-beta.0.1")));
-        assert!(main > Semver::from(String::from("8.4.12-alpha.0.1")));
-        assert!(main < Semver::from(String::from("8.4.12-alpha.2.0")));
-        assert!(main < Semver::from(String::from("8.4.12-alpha.1.2")));
-        assert!(main > Semver::from(String::from("8.4.12-alpha.1.0")));
-        assert!(main == Semver::from(String::from("8.4.12-alpha.1.1")));
+        let main = make("8.4.12-alpha.1.1");
+        assert!(main < make("8.4.12-beta.0.1"));
+        assert!(main > make("8.4.12-alpha.0.1"));
+        assert!(main < make("8.4.12-alpha.2.0"));
+        assert!(main < make("8.4.12-alpha.1.2"));
+        assert!(main > make("8.4.12-alpha.1.0"));
+        assert!(main == make("8.4.12-alpha.1.1"));
     }
 
     #[test]
     fn returns_a_string() {
-        assert_eq!(Semver::from(String::from("8.4.12")).to_string(), "8.4.12");
-        assert_eq!(Semver::from(String::from("8.4.12-alpha.1.1")).to_string(), "8.4.12-alpha.1.1");
-        assert_eq!(Semver::from(String::from("8.4.12-alpha.1.1+13.xxx.3")).to_string(), "8.4.12-alpha.1.1+13.xxx.3");
+        assert_eq!(make("8.4.12").to_string(), "8.4.12");
+        assert_eq!(make("8.4.12-alpha.1.1").to_string(), "8.4.12-alpha.1.1");
+        assert_eq!(
+            make("8.4.12-alpha.1.1+13.xxx.3").to_string(),
+            "8.4.12-alpha.1.1+13.xxx.3"
+        );
     }
 }

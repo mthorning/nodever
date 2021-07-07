@@ -20,7 +20,7 @@ impl NodeModule for StandardModule {
         self.dep_type = get_dep_type(&name, app_pjson.unwrap());
 
         self.name = name;
-        self.version = Some(Semver::from(version));
+        self.version = Semver::from(version);
 
         Ok(())
     }
