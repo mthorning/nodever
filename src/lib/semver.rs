@@ -9,6 +9,7 @@ use tests::Cli;
 
 #[derive(Debug)]
 pub struct Semver {
+    pub range: Option<String>,
     pub major: String,
     pub minor: String,
     pub patch: String,
@@ -19,7 +20,7 @@ pub struct Semver {
 impl Semver {
     pub fn from(version: String) -> Option<Self> {
         let re = Regex::new(
-            r#"[~>=<^]*(\d+)\.(\d+)\.(\d+)(?:-([.\-0-9a-zA-Z]+))?(?:\+([.\-0-9a-zA-Z]+))?"#,
+            r#"([~>=<^]*)(\d+)\.(\d+)\.(\d+)(?:-([.\-0-9a-zA-Z]+))?(?:\+([.\-0-9a-zA-Z]+))?"#,
         )
         .unwrap();
         match re.captures(&version) {
@@ -36,11 +37,12 @@ impl Semver {
                 };
 
                 Some(Semver {
-                    major: get_string(1),
-                    minor: get_string(2),
-                    patch: get_string(3),
-                    pre_release: get_option(4),
-                    build_metadata: get_option(5),
+                    range: get_option(1),
+                    major: get_string(2),
+                    minor: get_string(3),
+                    patch: get_string(4),
+                    pre_release: get_option(5),
+                    build_metadata: get_option(6),
                 })
             }
             None => None,
@@ -52,6 +54,11 @@ impl Semver {
         if let Some(pre_release) = &self.pre_release {
             version = format!("{}-{}", version, pre_release);
         }
+
+        if let Some(range) = &self.range {
+            version = format!("{}{}", range, version);
+        }
+
         if let Some(build_metadata) = &self.build_metadata {
             let cli = Cli::get();
             if cli.meta {
