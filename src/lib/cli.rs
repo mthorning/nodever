@@ -3,6 +3,7 @@ use structopt::StructOpt;
 use once_cell::sync::OnceCell;
 
 #[derive(StructOpt)]
+#[structopt(rename_all = "kebab-case")]
 pub struct Cli {
     /// The pattern to filter folders in node_modules.
     #[structopt(default_value = ".*")]
@@ -14,6 +15,9 @@ pub struct Cli {
 
     #[structopt(long)]
     pub diff: Option<PathBuf>,
+
+    #[structopt(long)]
+    pub required_by: bool,
 
     /// Search in global dependencies.
     #[structopt(long, short = "g")]

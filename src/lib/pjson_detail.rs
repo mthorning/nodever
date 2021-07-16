@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Error, Read};
 use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PjsonDetail {
     pub name: String,
@@ -18,9 +18,12 @@ pub struct PjsonDetail {
 
     #[serde(default = "default_to_none")]
     pub peer_dependencies: Option<HashMap<String, String>>,
+
+    #[serde(rename(deserialize = "_requiredBy"), default = "default_to_none")]
+    pub required_by: Option<Vec<String>>,
 }
 
-fn default_to_none() -> Option<HashMap<String, String>> {
+fn default_to_none<T>() -> Option<T> {
     None
 }
 
