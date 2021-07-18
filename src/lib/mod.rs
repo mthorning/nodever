@@ -15,8 +15,8 @@ use which::which;
 
 pub use cli::Cli;
 pub use node_module::diffed_pair::DiffedPair;
-pub use node_module::global_module::GlobalModule;
-pub use node_module::standard_module::StandardModule;
+pub use node_module::global::GlobalModule;
+pub use node_module::standard::StandardModule;
 pub use pjson_detail::PjsonDetail;
 
 pub fn run_global() -> Result<(), Error> {
@@ -49,6 +49,12 @@ pub fn run_diff(path: &PathBuf) -> Result<(), Error> {
     collect_dependencies(&diff_path, &mut diff_dependencies, Some(&diff_pjson))?;
     let diffed_pairs = DiffedPair::get_pairs(&dependencies, &diff_dependencies);
     print_table(&diffed_pairs);
+    Ok(())
+}
+
+pub fn run_required_by(path: &PathBuf) -> Result<(), Error> {
+    let app_pjson = PjsonDetail::from(&Cli::get().path)?;
+    let dependencies = get_standard_deps(&app_pjson)?;
     Ok(())
 }
 
@@ -116,7 +122,7 @@ fn print_table<T: node_module::PrintTable>(dependencies: &Vec<T>) {
     }
 
     for dependency in dependencies {
-        table.add_row(dependency.table_row());
+        dependency.add_to_table(&table);
     }
     table.printstd();
 }

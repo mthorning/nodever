@@ -1,6 +1,6 @@
 pub mod diffed_pair;
-pub mod global_module;
-pub mod standard_module;
+pub mod global;
+pub mod standard;
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -44,6 +44,8 @@ pub trait PrintTable {
     fn table_row(&self) -> Row {
         row![]
     }
+
+    fn add_to_table(&self, table: &mut Table) {
 }
 
 pub fn get_dep_type(name: &str, app_pjson: &PjsonDetail) -> DepType {

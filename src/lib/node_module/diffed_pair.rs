@@ -1,7 +1,7 @@
 use prettytable::{Attr, color};
 
 use crate::node_module::*;
-use crate::node_module::standard_module::StandardModule;
+use crate::node_module::standard::StandardModule;
 use crate::semver::Semver;
 
 pub struct DiffedPair<'a> {

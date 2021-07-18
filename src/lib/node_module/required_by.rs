@@ -8,14 +8,14 @@ use crate::node_module::*;
 use crate::pjson_detail::PjsonDetail;
 use crate::semver::Semver;
 
-pub struct StandardModule {
+pub struct RequiredByModule {
     pub name: String,
     pub version: Option<Semver>,
     pub dep_type: DepType,
     pub required_by: Option<Vec<String>>,
 }
 
-impl NodeModule for StandardModule {
+impl NodeModule for RequiredByModule {
     fn populate(&mut self, path: &PathBuf, app_pjson: Option<&PjsonDetail>) -> Result<(), Error> {
         let PjsonDetail {
             name,
@@ -41,12 +41,12 @@ impl NodeModule for StandardModule {
         standard_filter(&self.dep_type)
     }
 
-    fn order(&self, to_compare: &StandardModule) -> Ordering {
+    fn order(&self, to_compare: &RequiredByModule) -> Ordering {
         self.name.cmp(&to_compare.name)
     }
 }
 
-impl PrintTable for StandardModule {
+impl PrintTable for RequiredByModule {
     fn table_row(&self) -> Row {
         let version = match &self.version {
             Some(version) => version.to_string(),
@@ -67,9 +67,9 @@ impl PrintTable for StandardModule {
     }
 }
 
-impl Default for StandardModule {
+impl Default for RequiredByModule {
     fn default() -> Self {
-        StandardModule {
+        RequiredByModule {
             name: String::new(),
             version: None,
             dep_type: DepType::ChildDependency,
