@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::io::Error;
 use std::path::PathBuf;
 
-use prettytable::{color, row, Attr, Cell, Row};
+use prettytable::{color, row, Attr, Cell, Row, Table};
 use regex::Regex;
 
 use crate::cli::Cli;
@@ -41,11 +41,7 @@ pub trait NodeModule {
 }
 
 pub trait PrintTable {
-    fn table_row(&self) -> Row {
-        row![]
-    }
-
-    fn add_to_table(&self, table: &mut Table) {
+    fn add_to_table(&self, table: &mut Table);
 }
 
 pub fn get_dep_type(name: &str, app_pjson: &PjsonDetail) -> DepType {

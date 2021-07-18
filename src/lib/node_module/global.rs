@@ -38,8 +38,8 @@ impl NodeModule for GlobalModule {
 }
 
 impl PrintTable for GlobalModule {
-    fn table_row(&self) -> Row {
-        row![c => self.name, self.version]
+    fn add_to_table(&self, table: &mut Table) {
+        table.add_row(row![c => self.name, self.version]);
     }
 }
 

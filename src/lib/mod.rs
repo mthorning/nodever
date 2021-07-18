@@ -122,7 +122,7 @@ fn print_table<T: node_module::PrintTable>(dependencies: &Vec<T>) {
     }
 
     for dependency in dependencies {
-        dependency.add_to_table(&table);
+        dependency.add_to_table(&mut table);
     }
     table.printstd();
 }

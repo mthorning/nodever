@@ -3,6 +3,7 @@ use std::io::Error;
 use std::path::PathBuf;
 
 use regex::Regex;
+use prettytable::Table;
 
 use crate::node_module::*;
 use crate::pjson_detail::PjsonDetail;
@@ -44,19 +45,6 @@ impl NodeModule for StandardModule {
 }
 
 impl PrintTable for StandardModule {
-    fn table_row(&self) -> Row {
-        let version = match &self.version {
-            Some(version) => version.to_string(),
-            None => String::new(),
-        };
-
-        Row::new(vec![
-            new_cell(&self.name),
-            get_pjson_version_cell(&self.dep_type),
-            new_cell(&version),
-        ])
-    }
-
     fn add_to_table(&self, table: &mut Table) {
         let version = match &self.version {
             Some(version) => version.to_string(),

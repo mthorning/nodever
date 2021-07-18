@@ -56,15 +56,15 @@ impl<'a> DiffedPair<'a>{
 }
 
 impl<'a> PrintTable for DiffedPair<'a> {
-    fn table_row(&self) -> Row {
+    fn add_to_table(&self, table: &mut Table) {
         let (version_one, version_two) = diffed_cells(&self.version.0, &self.version.1);
-        Row::new(vec![
+        table.add_row(Row::new(vec![
             new_cell(&self.name),
             get_pjson_version_cell(&self.dep_type.0),
             version_one,
             get_pjson_version_cell(&self.dep_type.1),
             version_two,
-        ])
+        ]));
    }
 }
 
