@@ -1,6 +1,7 @@
 pub mod diffed_pair;
 pub mod global;
 pub mod standard;
+pub mod required_by;
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -14,6 +15,7 @@ use crate::cli::Cli;
 use crate::pjson_detail::PjsonDetail;
 use crate::semver::Semver;
 
+#[derive(Clone)]
 pub enum DepType {
     Dependency(Option<Semver>),
     DevDependency(Option<Semver>),

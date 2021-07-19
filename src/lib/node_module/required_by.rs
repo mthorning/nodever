@@ -2,17 +2,35 @@ use std::cmp::Ordering;
 use std::io::Error;
 use std::path::PathBuf;
 
+use prettytable::{Cell, Row, Table};
 use regex::Regex;
 
 use crate::node_module::*;
 use crate::pjson_detail::PjsonDetail;
 use crate::semver::Semver;
 
+#[derive(Clone)]
 pub struct RequiredByModule {
     pub name: String,
     pub version: Option<Semver>,
     pub dep_type: DepType,
-    pub required_by: Option<Vec<String>>,
+    required_by: Option<Vec<String>>,
+    pub required_versions: Option<HashMap<String, String>>,
+}
+
+impl RequiredByModule {
+    pub fn find_required_versions(&mut self, dependencies: &Vec<RequiredByModule>) {
+        match &self.required_by {
+            None => return,
+            Some(required_by) => {
+                for name in required_by {
+                    for dependency in dependencies {
+                        // println!("hi {:?} : {:?}", name, dependency.name);
+                    }
+                }       
+            }
+        }
+    }
 }
 
 impl NodeModule for RequiredByModule {
@@ -44,26 +62,28 @@ impl NodeModule for RequiredByModule {
     fn order(&self, to_compare: &RequiredByModule) -> Ordering {
         self.name.cmp(&to_compare.name)
     }
+
 }
 
 impl PrintTable for RequiredByModule {
-    fn table_row(&self) -> Row {
+    fn add_to_table(&self, table: &mut Table) {
         let version = match &self.version {
-            Some(version) => version.to_string(),
+            Some(version) => format!("({})", version.to_string()),
             None => String::new(),
         };
 
-        let mut row = Row::new(vec![
-            new_cell(&self.name),
-            get_pjson_version_cell(&self.dep_type),
-            new_cell(&version),
-        ]);
+        table.add_row(Row::new(vec![
+            new_cell(&format!("{} {}", &self.name, version)).with_hspan(2),
+        ]));
 
         if let Some(required_by) = &self.required_by {
-            row.add_cell(Cell::new(&required_by.join("\n").trim()));
+            for requirement in required_by {
+                table.add_row(Row::new(vec![
+                    Cell::new(&requirement),
+                    Cell::new("2.0.0")
+                ]));
+            }
         }
-
-        row
     }
 }
 
@@ -74,6 +94,7 @@ impl Default for RequiredByModule {
             version: None,
             dep_type: DepType::ChildDependency,
             required_by: None,
+            required_versions: None,
         }
     }
 }

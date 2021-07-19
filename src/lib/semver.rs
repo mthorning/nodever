@@ -7,7 +7,7 @@ use crate::cli::Cli;
 #[cfg(test)]
 use tests::Cli;
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct Semver {
     pub range: Option<String>,
     pub major: String,

@@ -14,10 +14,12 @@ use regex::Regex;
 use which::which;
 
 pub use cli::Cli;
-pub use node_module::diffed_pair::DiffedPair;
-pub use node_module::global::GlobalModule;
-pub use node_module::standard::StandardModule;
-pub use pjson_detail::PjsonDetail;
+use node_module::diffed_pair::DiffedPair;
+use node_module::global::GlobalModule;
+use node_module::standard::StandardModule;
+use node_module::required_by::RequiredByModule;
+use pjson_detail::PjsonDetail;
+use crate::node_module::PrintTable;
 
 pub fn run_global() -> Result<(), Error> {
     let base_path = get_node_modules_path(&get_global_path());
@@ -52,9 +54,20 @@ pub fn run_diff(path: &PathBuf) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn run_required_by(path: &PathBuf) -> Result<(), Error> {
+pub fn run_required_by() -> Result<(), Error> {
     let app_pjson = PjsonDetail::from(&Cli::get().path)?;
-    let dependencies = get_standard_deps(&app_pjson)?;
+    let base_path = get_node_modules_path(&Cli::get().path);
+    let mut dependencies = Vec::<RequiredByModule>::new();
+    collect_dependencies(&base_path, &mut dependencies, Some(&app_pjson))?;
+
+    for dependency in &dependencies {
+        let mut cloned_dependency = dependency.clone();
+        cloned_dependency.find_required_versions(&dependencies);
+
+        let mut table = Table::new();
+        dependency.add_to_table(&mut table);
+        table.printstd();
+    }
     Ok(())
 }
 
